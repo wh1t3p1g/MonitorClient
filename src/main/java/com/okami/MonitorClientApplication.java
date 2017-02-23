@@ -19,18 +19,7 @@ public class MonitorClientApplication extends SpringBootServletInitializer imple
 	public static Log log = LogFactory.getLog(MonitorClientApplication.class);
 
 	public static void main(String[] args) {
-//		ConfigBean configBean = new ConfigBean();
-//		configBean.setStoragePath("C:\\Users\\dell\\Desktop\\存储地址");
-//		ControllerCenter controllerCenter = new ControllerCenter(configBean);
-//		controllerCenter.work();
-
 		ctx=SpringApplication.run(MonitorClientApplication.class, args);
-		ScannerApplication scannerApplication= ctx.getBean(ScannerApplication.class);
-		scannerApplication.run();
-//		byte[] content= FileUtil.readByte("/Users/wh1t3p1g/Documents/Code/phpProject/DataCenter/vendor/topthink/think-captcha/src/Captcha.php");
-//		System.out.println(new String(content));
-		//run scanner plugin, just for test
-		//MonitorClientApplication.ctx.getBean(Monitor.class);
 	}
 
 	@Override
