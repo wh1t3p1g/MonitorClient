@@ -3,7 +3,6 @@ package com.okami.plugin.scanner.core.handle;
 import com.okami.MonitorClientApplication;
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.util.FileUtil;
-import com.okami.util.Utils;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;

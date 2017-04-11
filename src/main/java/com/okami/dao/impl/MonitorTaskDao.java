@@ -101,16 +101,16 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 		try {
 			conn = dataSource.getConnection();
 			PreparedStatement ps = conn.prepareStatement(sql);
-			ps.setInt(1, monitorTask.getTaskId());
-			ps.setString(2, monitorTask.getTaskName());
-			ps.setString(3, monitorTask.getProjectName());
-			ps.setString(4, monitorTask.getMonitorPath());
-			ps.setString(5, monitorTask.getWhiteList());
-			ps.setString(6, monitorTask.getBlackList());
-			ps.setString(7, monitorTask.getFlagName());
-			ps.setInt(8, monitorTask.getRunMode());
-			ps.setInt(9, monitorTask.getBCMode());
-			ps.setString(10, monitorTask.getRemark());
+			ps.setString(1, monitorTask.getTaskName());
+			ps.setString(2, monitorTask.getProjectName());
+			ps.setString(3, monitorTask.getMonitorPath());
+			ps.setString(4, monitorTask.getWhiteList());
+			ps.setString(5, monitorTask.getBlackList());
+			ps.setString(6, monitorTask.getFlagName());
+			ps.setInt(7, monitorTask.getRunMode());
+			ps.setInt(8, monitorTask.getBCMode());
+			ps.setString(9, monitorTask.getRemark());
+			ps.setInt(10, monitorTask.getTaskId());
 			ps.executeUpdate();
 			ps.close();
 			

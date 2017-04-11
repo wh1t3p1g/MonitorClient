@@ -1,10 +1,9 @@
 package com.okami.common;
 
 import com.okami.bean.ConfigBean;
-import com.okami.bean.MonitorTaskBean;
 
 /**
- * 命令行参数处理行数
+ * 命令行参数处理行数,暂时
  * @author orleven
  * @date 2017年2月7日
  */

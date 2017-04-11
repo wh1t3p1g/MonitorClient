@@ -24,17 +24,19 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.okami.bean.ConfigBean;
+import com.okami.bean.GlobaVariableBean;
 import com.okami.config.DBConfig;
 import com.okami.dao.impl.CacheLogDao;
 import com.okami.dao.impl.MonitorTaskDao;
 import com.okami.entities.CacheLog;
+import com.okami.util.FileUtil;
 
 /**
  * 心跳模块以及发送消息模块
  * @author orleven
  * @date 2017年1月15日
  */
-
+@Component
 public class HeartBeatsThread extends Thread{
 	
 	private ConfigBean configBean;
@@ -63,9 +65,13 @@ public class HeartBeatsThread extends Thread{
 	
 	private Map<String, String> httpHeaders;
 	
-	public HeartBeatsThread(ConfigBean configBean,Queue<String> qHeartBeats){
-		this.configBean = configBean;
-		this.qHeartBeats = qHeartBeats;
+	/**
+	 * 初始化
+	 */
+	public boolean init(){
+		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
+		this.qHeartBeats = globaVariableBean.getQHeartBeats();
+		this.configBean = IOC.instance().getClassobj(ConfigBean.class);
 		this.heartBeatsLogPath = configBean.getLogPath()+File.separator +"heartbeats.log";
 		this.monitorLogPath = configBean.getLogPath()+File.separator +"monitor.log";
 		statusFlag = diffFlag = true;
@@ -75,27 +81,22 @@ public class HeartBeatsThread extends Thread{
 		httpHeaders.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:48.0) Gecko/20100101 Firefox/48.0");
 		httpHeaders.put("Accept", "*/*");
 		httpHeaders.put("Accept-Encoding", "gzip, deflate");
+		return true;
 	}
 	
 	public Queue<String> getQHeartBeats(){
 		return qHeartBeats;
 	}
+
+	public void setQHeartBeats(Queue<String> qHeartBeats){
+		this.qHeartBeats = qHeartBeats;
+	}
 	
 	public void run(){
 		if(configBean.getRemoteMode()==true){
-			try {
-				nowTime = new Date();
-				FileWriter fw = new FileWriter(heartBeatsLogPath,true);
-				BufferedWriter bw = new BufferedWriter(fw);
-				String message = String.format("[%s][信息][连接服务器 (%s:%s) ...]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
-				bw.write(message);
-				System.out.println(message);
-				bw.flush();
-				bw.close();
-				fw.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			nowTime = new Date();
+			String message = String.format("[%s][信息][连接服务器 (%s:%s) ...]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
+			FileUtil.write(heartBeatsLogPath, message, true);
 		}
 		
 		while(true){
@@ -116,37 +117,34 @@ public class HeartBeatsThread extends Thread{
 					
 					// 有消息推送过来
 					if(!qHeartBeats.isEmpty()){
-						String textList = qHeartBeats.remove();
-						FileWriter fw = new FileWriter(monitorLogPath,true);
-						BufferedWriter bw = new BufferedWriter(fw);
-						bw.write(textList+"\r\n");
-						System.out.print(textList+"\r\n");
-						bw.flush();
-						bw.close();
-						fw.close();
+						// 先存入数据库
+						String text = qHeartBeats.poll();
+						if(text!=null){
+							String[] textList =  text.split("\t");
+							try {
+								System.out.print(textList[0]+"\t"+textList[1]+"\t"+textList[2]+"\r\n");
+								CacheLog cacheLog = new CacheLog();
+								cacheLog.setTime(textList[0]);
+								cacheLog.setType(textList[1]);;
+								cacheLog.setEvent(textList[2]);
+								CacheLogDao cacheLogDao = new CacheLogDao();
+								cacheLogDao.setDataSource(new DBConfig().dataSource());
+								cacheLogDao.insertCacheLog(cacheLog);
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						}
 					}
 					
-
+					// 逻辑判断，避免重复存入log
 					if(statusFlag ^ diffFlag){
 						diffFlag = statusFlag;
 						if(statusFlag){
-							FileWriter fw = new FileWriter(heartBeatsLogPath,true);
-							BufferedWriter bw = new BufferedWriter(fw);
 							String message = String.format("[%s][信息][连接服务器 (%s:%s) 成功！]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
-							bw.write(message);
-							System.out.print(message);
-							bw.flush();
-							bw.close();
-							fw.close();
+							FileUtil.write(heartBeatsLogPath, message, true);
 						}else{
-							FileWriter fw = new FileWriter(heartBeatsLogPath,true);
-							BufferedWriter bw = new BufferedWriter(fw);
 							String message = String.format("[%s][信息][连接服务器 (%s:%s) 失败！]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
-							bw.write(message);
-							System.out.print(message);
-							bw.flush();
-							bw.close();
-							fw.close();
+							FileUtil.write(heartBeatsLogPath, message, true);
 						}
 					}
 					
@@ -159,13 +157,19 @@ public class HeartBeatsThread extends Thread{
 							for(int i=0;i<CacheLogs.size();i++){
 								//发送
 								CacheLog cacheLog = CacheLogs.get(i);
+								String message = String.format("[%s][%s:%s][%s][%s]\r\n",cacheLog.getTime(),configBean.getRhost(),configBean.getRport(),cacheLog.getType(),cacheLog.getEvent());
+								statusFlag = httpGet("http://"+configBean.getRhost()+":"+configBean.getRport()+"/monitor/hb");
+								if(!statusFlag){
+									break;
+								}
+	
+								FileUtil.write(monitorLogPath, message, true);
 								cacheLogDao.deleteCacheLog(cacheLog);
 							}
 						} catch (Exception e) {
 							e.printStackTrace();
 						}
 					}
-					
 					
 				}catch (Exception e) {
 					e.printStackTrace();
@@ -174,19 +178,7 @@ public class HeartBeatsThread extends Thread{
 		}
 		
 	}
-	
-//	public boolean writeLog(String logName,String message,String mode){
-//		FileWriter fw = new FileWriter(logName);
-//		BufferedWriter bw = new BufferedWriter(fw);
-//		//String message = String.format("[%s][信息][连接服务器 (%s:%s) ...]\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
-//		bw.write(message);
-//		System.out.println(message);
-//		bw.flush();
-//		bw.close();
-//		fw.close();
-//		return true;
-//	}
-	
+
 	public boolean httpGet(String targetUrl){
 		HttpClient client = HttpClients.createDefault();
 		HttpGet get = new HttpGet(targetUrl);

@@ -48,7 +48,8 @@ public class ZLibUtils {
                 e.printStackTrace();  
             }  
         }  
-        compresser.end();  
+        compresser.end(); 
+
         return output;  
     }  
   
@@ -65,7 +66,8 @@ public class ZLibUtils {
   
             dos.finish();  
   
-            dos.flush();  
+            dos.flush(); 
+            dos.close();
         } catch (IOException e) {  
             e.printStackTrace();  
         }  
@@ -114,6 +116,7 @@ public class ZLibUtils {
     public static byte[] decompress(InputStream is) {  
         InflaterInputStream iis = new InflaterInputStream(is);  
         ByteArrayOutputStream o = new ByteArrayOutputStream(1024);  
+        byte[] result = null;
         try {  
             int i = 1024;  
             byte[] buf = new byte[i];  
@@ -121,30 +124,29 @@ public class ZLibUtils {
             while ((i = iis.read(buf, 0, i)) > 0) {  
                 o.write(buf, 0, i);  
             }  
-  
+            result = o.toByteArray();
+            o.close();
+            iis.close();
         } catch (IOException e) {  
             e.printStackTrace();  
         }  
-        return o.toByteArray();  
+        return   result;
     }  
     
-//    public final void testBytes() {  
-//        System.err.println("字节压缩／解压缩测试");  
-//        String inputStr = "snowolf@zlex.org;dongliang@zlex.org;zlex.dongliang@zlex.org";  
-//        System.err.println("输入字符串:\t" + inputStr);  
-//        byte[] input = inputStr.getBytes();  
+    public static void main(String args[]){
+
+        byte[] data = FileUtil.readByte("C:\\Users\\dell\\Desktop\\accounts.db");
 //        System.err.println("输入字节长度:\t" + input.length);  
 //  
 //        byte[] data = ZLibUtils.compress(input);  
 //        System.err.println("压缩后字节长度:\t" + data.length);  
-//  
-//        byte[] output = ZLibUtils.decompress(data);  
-//        System.err.println("解压缩后字节长度:\t" + output.length);  
-//        String outputStr = new String(output);  
-//        System.err.println("输出字符串:\t" + outputStr);  
-//  
-//        assertEquals(inputStr, outputStr);  
-//    }  
+  
+        byte[] output = ZLibUtils.decompress(data);  
+        System.err.println("解压缩后字节长度:\t" + output.length);  
+        String outputStr = new String(output);  
+        System.err.println("输出字符串:\t" + outputStr);  
+  
+    }  
 //  
 //    @Test  
 //    public final void testFile() {  

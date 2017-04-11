@@ -1,5 +1,9 @@
 package com.okami;
 
+
+import com.okami.bean.ConfigBean;
+import com.okami.core.ControlCenter;
+import com.okami.core.IOC;
 import com.okami.plugin.ScannerApplication;
 import com.okami.util.FileUtil;
 import org.apache.commons.logging.Log;
@@ -11,15 +15,23 @@ import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomi
 import org.springframework.boot.web.support.SpringBootServletInitializer;
 import org.springframework.context.ApplicationContext;
 
+
 @SpringBootApplication
 public class MonitorClientApplication extends SpringBootServletInitializer implements EmbeddedServletContainerCustomizer {
 
 	public static ApplicationContext  ctx;
 
-	public static Log log = LogFactory.getLog(MonitorClientApplication.class);
+	public static Log log ;
 
 	public static void main(String[] args) {
-		ctx=SpringApplication.run(MonitorClientApplication.class, args);
+		
+		IOC.ctx  = SpringApplication.run(MonitorClientApplication.class, args); 
+		ctx =  IOC.ctx; 
+		log = IOC.log; 
+		
+		ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
+		controlCenter.init();
+        controlCenter.audoLoad();
 	}
 
 	@Override

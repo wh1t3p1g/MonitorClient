@@ -2,7 +2,6 @@ package com.okami.common;
 
 
 import com.okami.bean.ConfigBean;
-import com.okami.bean.MonitorTaskBean;
 
 /**
  * 参数处理
@@ -63,17 +62,17 @@ public class ParameterHandle {
      * 检查taskBean里的参数是否正常
      * @param taskBean
      */
-    public boolean taskBeanDeal(MonitorTaskBean taskBean){
-    	return true;
-    }
-    
-    public static MonitorTaskBean jsonStrTOTaskBean(String jsonStr,ConfigBean configBean){
-//    	JSONArray messageJArray = new JSONArray(jsonStr);
-//		JSONObject messageJObj = messageJArray.getJSONObject(0);
-//    	String taskName = messageJObj.getString("taskName");
-    	MonitorTaskBean taskBean = new MonitorTaskBean("改",configBean);
-    	
-    	
-    	return taskBean;
-    }
+//    public boolean taskBeanDeal(TaskConfigBean taskBean){
+//    	return true;
+//    }
+//    
+//    public static TaskConfigBean jsonStrTOTaskBean(String jsonStr,ConfigBean configBean){
+////    	JSONArray messageJArray = new JSONArray(jsonStr);
+////		JSONObject messageJObj = messageJArray.getJSONObject(0);
+////    	String taskName = messageJObj.getString("taskName");
+//    	TaskConfigBean taskBean = new TaskConfigBean("改",configBean);
+//    	
+//    	
+//    	return taskBean;
+//    }
 }
