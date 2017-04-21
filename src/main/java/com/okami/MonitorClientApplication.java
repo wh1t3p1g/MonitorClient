@@ -1,6 +1,7 @@
 package com.okami;
 
 import com.okami.plugin.ScannerApplication;
+import com.okami.plugin.scanner.bean.BaseTask;
 import com.okami.util.FileUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -20,6 +21,22 @@ public class MonitorClientApplication extends SpringBootServletInitializer imple
 
 	public static void main(String[] args) {
 		ctx=SpringApplication.run(MonitorClientApplication.class, args);
+
+		ScannerApplication scannerApplication=ctx.getBean(ScannerApplication.class);
+//		BaseTask task=ctx.getBean(BaseTask.class);
+//		task.setFilePath("/Users/wh1t3P1g/Desktop/webshell");
+//		task.setScriptExtension("txt");
+//		task.setType(1);
+//		task.setExceptExtension(
+//				"js,css,zip,rar,swf,ttf,dat,mp3,mp4,avi,mov,aiff," +
+//				"mpeg,mpg,qt,ram,viv,flv,wav,map,svg,woff,woff2,eot,psd,mp3," +
+//				"mp4,avi,mov,aiff,mpeg,mpg,qt,ram,viv,flv,wav");
+//		task.setExceptPath(
+//				"/Users/wh1t3P1g/Desktop/webshell/webshell/138shell/B");
+//
+//
+//		scannerApplication.setTask(task);
+//		scannerApplication.run();
 	}
 
 	@Override

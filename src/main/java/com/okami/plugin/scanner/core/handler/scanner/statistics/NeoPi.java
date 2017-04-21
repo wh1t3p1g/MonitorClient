@@ -1,4 +1,4 @@
-package com.okami.plugin.scanner.core.handle;
+package com.okami.plugin.scanner.core.handler.scanner.statistics;
 
 import com.okami.plugin.scanner.bean.FileContent;
 

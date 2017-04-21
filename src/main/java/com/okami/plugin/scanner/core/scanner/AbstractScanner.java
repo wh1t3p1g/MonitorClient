@@ -1,8 +1,9 @@
 package com.okami.plugin.scanner.core.scanner;
 
+import com.okami.plugin.scanner.bean.BaseTask;
 import com.okami.plugin.scanner.bean.FileContent;
-import com.okami.plugin.scanner.bean.RetMetaData;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author wh1t3P1g
@@ -10,7 +11,7 @@ import java.util.List;
  */
 public abstract class AbstractScanner {
     /**
-     * 包含待扫描文件的文件属性
+     * 包含待扫描文件的文件列表
      */
     private List<FileContent> fileContents;
 
@@ -18,7 +19,7 @@ public abstract class AbstractScanner {
      * 扫描计算返回结果
      * @return RetMetaData
      */
-    public abstract RetMetaData calculate();
+    public abstract Map<String,String> calculate();
 
     public List<FileContent> getFileContents() {
         return fileContents;

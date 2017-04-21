@@ -1,4 +1,4 @@
-package com.okami.plugin.scanner.core.handle;
+package com.okami.plugin.scanner.core.handler.scanner.statistics;
 
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.util.FileUtil;
@@ -14,7 +14,7 @@ import java.util.*;
  */
 @Component
 @Scope("prototype")
-public class Entropy extends NeoPi{
+public class Entropy extends NeoPi {
 
     @Override
     public void calculate(){
