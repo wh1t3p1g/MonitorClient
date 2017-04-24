@@ -17,6 +17,14 @@ public interface  IMonitorTaskDao {
 	 public List<MonitorTask> queryTask() throws Exception ;
 	 
 	 /**
+	  * 查询task通过taskname
+	  * @data 2017年4月23日
+	  * @return
+	  * @throws Exception
+	  */
+	 public MonitorTask queryTaskByTaskName(String taskName) throws Exception ;
+	 
+	 /**
 	  * 插入Task
 	  * @return
 	  * @throws Exception
@@ -29,4 +37,20 @@ public interface  IMonitorTaskDao {
 	  * @throws Exception
 	  */
 	 public boolean updateTask(MonitorTask task) throws Exception ;
+	 
+//	 /**
+//	  * 连接数据库
+//	  * @data 2017年4月23日
+//	  * @return
+//	  * @throws Exception
+//	  */
+//	 public boolean connectDB() throws Exception;
+//	 
+//	 /**
+//	  * 关闭连接数据库
+//	  * @data 2017年4月23日
+//	  * @return
+//	  * @throws Exception
+//	  */
+//	 public boolean closeConnection() throws Exception;
 }

@@ -12,7 +12,6 @@ import java.util.List;
  * @author wh1t3P1g
  * @since 2017/1/6
  */
-@Component
 public class FileUtil {
 
     public static String readAll(String filePath){
@@ -101,12 +100,19 @@ public class FileUtil {
         return null;
     }
 
-    public static boolean write(String filePath,String content)
+    /**
+     * 写入文件
+     * @param filePath 文件地址
+     * @param content 写入内容
+     * @param flag 追加
+     * @return
+     */
+    public static boolean write(String filePath,String content,boolean flag)
     {
         FileWriter fw;
         BufferedWriter bw;
         try{
-            fw=new FileWriter(filePath);
+            fw=new FileWriter(filePath,flag);
             bw=new BufferedWriter(fw);
             bw.write(content);
             bw.close();
@@ -117,5 +123,94 @@ public class FileUtil {
         }
         return false;
     }
+
+    /**
+     * 寻找对应的key
+     * @param tarPath 目标文件的地址
+     * @param monitorPath 监控路径
+     * @param taskName 任务名
+     * @param bakPath 备份地址 
+     * @param flagName flag 文件名
+     * @return Type|MD5|Name|Read|Write|Exec
+     */
+    public static String searchKey(String tarPath,String monitorPath,String taskName,String bakPath,String flagName){
+    	String key = "";
+    	String[] values = null;
+    	List<String> contents = null;
+    	String cBakPath = bakPath;
+    	String[] names = tarPath.substring(monitorPath.length()+1).replaceAll("\\\\", "/").split("/");
+    	int count = names.length;
+    	for(int i=0;i<names.length;i++){
+    		contents = FileUtil.readLines(cBakPath+File.separator+flagName);
+    		for(int j=0;j<contents.size();j++){
+    			values = contents.get(j).split("\\|");
+    			if(values[2].equals(names[i])){
+    				cBakPath += File.separator + values[1];
+    				key = contents.get(j);
+    				count -= 1;
+    				break;
+    			}
+    		}
+    	}
+    	if(count != 0){
+    		return null;
+    	}
+    	return key+"|"+cBakPath;
+    }
+    
+    /**
+     * 删除一个文件下的所有文件或者删除某个文件
+     * @param file
+     */
+	public static boolean deleteAll(File file) {
+		while(file.exists()){
+			delSub(file);
+		}
+		return true;
+	}
+	
+	/**
+	 * 删除一个文件下的所有文件或者删除某个文件
+	 * @param file
+	 * @return
+	 */
+	public static boolean delSub(File file){
+		try{
+
+			if (file.isFile()|| (file.list()!=null&&file.list().length == 0) ) {
+				file.delete();
+			} 
+			else {
+				File[] files = file.listFiles();
+				for (int i = 0;  i < files.length; i++) {
+					deleteAll(files[i]);
+					files[i].delete();
+				}
+			}
+			if (file.exists()) // 如果文件本身就是目录 ，就要删除目录
+				file.delete();
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+		return true;
+	}
+	
+	/**
+	 * 删除flag里的某条key
+	 * @return
+	 */
+	public static boolean dealKey(String flagFile,String key){
+		List<String> contents = FileUtil.readLines(flagFile);
+		String content = "";
+		for(int i=0;i<contents.size();i++){
+			if(contents.get(i).equals(key)){
+				contents.remove(i);
+				i--;
+				continue;
+			}
+			content += contents.get(i)+"\r\n";
+		}
+		return FileUtil.write(flagFile,content,false);
+	}
 
 }

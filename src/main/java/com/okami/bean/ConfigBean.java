@@ -55,39 +55,37 @@ public class ConfigBean {
 	/**
 	 * 缓存地址
 	 */
-	private String cashPath;
+	private String cachPath;
+	
+//	/**
+//	 * 自检地址
+//	 */
+//	private String checkPath;	
+	
 	
 	/**
 	 * 日志地址
 	 */
 	private String logPath;
-	
 
-	public ConfigBean(String rhost,String rport,String lhost,String lport){
-		this.rhost = rhost;
-		this.rport = rport;
-		this.lhost = lhost;
-		this.lport = lport;
-		this.storagePath = System.getProperty("user.dir");
-		this.delay = 60;
-		this.remoteMode = true;
-		setStoragePath(this.storagePath);
-	}
 	
 	public ConfigBean(){
+		
 		this.remoteMode = false;
+		this.delay = 60;
 		this.storagePath = System.getProperty("user.dir");
 		setStoragePath(this.storagePath);
 	}
 	
-	public String getToragePath(){
+	public String getStoragePath(){
 		return this.storagePath;
 	}
 	
 	public void setStoragePath(String storagePath){
 		this.storagePath = storagePath;
 		this.bakPath = this.storagePath +File.separator +"bak";
-		this.cashPath = this.storagePath +File.separator +"cash";
+//		this.checkPath = this.storagePath + File.separator + "check";
+		this.cachPath = this.storagePath +File.separator +"cach";
 		this.logPath = this.storagePath +File.separator +"log";
 	}
 	
@@ -143,8 +141,8 @@ public class ConfigBean {
 //		this.cashPath = cashPath;
 //	}
 	
-	public String getCashPath(){
-		return cashPath;
+	public String getCachPath(){
+		return cachPath;
 	}
 	
 //	public void setBakPath(String bakPath){
@@ -162,4 +160,8 @@ public class ConfigBean {
 	public String getLogPath(){
 		return logPath;
 	}
+	
+//	public String getCheckPath(){
+//		return checkPath;
+//	}
 }
