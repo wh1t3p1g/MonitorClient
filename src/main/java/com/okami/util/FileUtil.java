@@ -12,7 +12,6 @@ import java.util.List;
  * @author wh1t3P1g
  * @since 2017/1/6
  */
-@Component
 public class FileUtil {
 
     public static String readAll(String filePath){

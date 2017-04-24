@@ -6,9 +6,13 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import com.okami.bean.ConfigBean;
+import com.okami.bean.GlobaVariableBean;
+import com.okami.common.HttpHandler;
 import com.okami.config.DBConfig;
 import com.okami.core.MonitorThread.Listener;
 import com.okami.dao.impl.FileIndexDao;
@@ -16,7 +20,9 @@ import com.okami.entities.FileIndex;
 import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
-import com.okami.util.ZLibUtils;
+import com.okami.util.WebUtil;
+import com.okami.util.ZLibUtil;
+import com.okami.util.ZipUtil;
 
 public class BackupAndCheckThread extends Thread{
 	
@@ -33,6 +39,17 @@ public class BackupAndCheckThread extends Thread{
 	private String time ;
 	
 	private FileIndexDao fileIndexDao;
+	
+	private ConfigBean configBean;
+	
+	private int rarId = 1;  // rar的id
+	
+	private long size = 0;  // 压缩rar当前的大小
+	
+	private long maxSize ;   // 一个rar最大的长度
+	
+	private int status =0 ;
+	
 
 	/**
 	 * 初始化
@@ -40,11 +57,13 @@ public class BackupAndCheckThread extends Thread{
 	 * @return
 	 */
     public boolean init(MonitorTask monitorTask,FileIndexDao fileIndexDao){
-		ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
+		this.configBean = IOC.instance().getClassobj(ConfigBean.class);
 		this.monitorTask = monitorTask;
 		this.bakPath = configBean.getBakPath()+File.separator + monitorTask.getTaskName();
 		this.cachPath  = configBean.getCachPath()+File.separator + monitorTask.getTaskName();
 		this.fileIndexDao = fileIndexDao;
+		this.maxSize = Long.parseLong(monitorTask.getMaxSize());
+		this.time = DataUtil.getTime();
 		initPath();
 		return true;
 	}
@@ -72,7 +91,7 @@ public class BackupAndCheckThread extends Thread{
 		if(cashPath.exists()){
 			FileUtil.deleteAll(cashPath);
 		}
-
+		cashPath.mkdirs();
 //		File cashZip = new File(this.cachPath+".zip");
 //		if(cashZip.exists()){
 //			FileUtil.deleteAll(cashZip);
@@ -85,7 +104,6 @@ public class BackupAndCheckThread extends Thread{
 				FileUtil.deleteAll(bakPath);
 			}
 			bakPath.mkdir();
-			
 			
 //			File bakZip = new File(this.bakPath+".zip");
 //			if(bakZip.exists()){
@@ -110,6 +128,7 @@ public class BackupAndCheckThread extends Thread{
 			checkMode();
 		}
 		
+		
 	}
 	
 	
@@ -128,17 +147,12 @@ public class BackupAndCheckThread extends Thread{
 		try {
 			fileIndexDao.createTable();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
 		//备份
-		time = DataUtil.getTime();
-		File dir = new File(monitorTask.getMonitorPath());
+		backup(new File(monitorTask.getMonitorPath()));
 		
-		backup(dir);
-		
-
 		
 		if(monitorTask.getRunMode()==0){
 			return false;
@@ -147,18 +161,63 @@ public class BackupAndCheckThread extends Thread{
 		// 切换至安全模式		
 		qMonitor.offer("True");
 		qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Safe Mode : " + monitorTask.getMonitorPath());
+				
+		// 上传rar文件
+		HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);
+		String result = null ;
+		File[] files = new File(this.cachPath).listFiles();
+		for(File file:files){
+			result = null;
+			while(result==null || result.indexOf("success")<=0)
+			{
+				try {
+					sleep(3000);
+					result = httpHandler.upload(file);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+
+		// 上传flag文件 
+		File file = new File(configBean.getBakPath() + File.separator + monitorTask.getFlagName());
+		result = null;
+		while(result==null || result.indexOf("success")<=0)
+		{
+			try {
+				sleep(3000);
+				result = httpHandler.upload(file);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+		}
+		qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUpload Success : " + monitorTask.getMonitorPath());
 		
-		// 压缩		
-//		cBakFlagPath = bakPath + File.separator + "flag" + File.separator  +monitorTask.getTaskName();
-//		ZipUtil.addFoldInZip(this.bakPath, null, this.cachPath +".zip", "123456");
-//		ZipUtil.addFoldInZip(this.cBakFlagPath, null, this.cCachFlagPath +".zip", "123456");
+		// 上传后删除rar文件
+		File cashPath= new File(this.cachPath);
+		if(cashPath.exists()){
+			FileUtil.deleteAll(cashPath);
+		}
 		
-		// 上传,然后删除flag文件
+		// 以后变成自检模式，并插入数据库
+		monitorTask.setBCMode(1);
+		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
+		for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
+			if(globaVariableBean.getMonitorTaskList().get(i).getTaskName().equals(monitorTask.getTaskName())){
+				globaVariableBean.getMonitorTaskList().get(i).setBCMode(1);
+			}
+		}
+		try {
+			globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		return true;
 	}
 	
 	/**
-	 * 递归备份
+	 * 递归备份,同时添加压缩包
 	 * @data 2017年3月11日
 	 * @param dir
 	 * @return
@@ -167,9 +226,9 @@ public class BackupAndCheckThread extends Thread{
 		if(monitorTask.getRunMode()==0){
 			return false;
 		}
+		
 		try {
 			File[] file = dir.listFiles();
-			File tBakFile = null;
 			String sha1Str = null;
 
 			for(int i=0; i<file.length; i++){
@@ -180,18 +239,33 @@ public class BackupAndCheckThread extends Thread{
 				}else{
 					// 压缩文件
 					sha1Str = DataUtil.getSHA1ByFile(file[i]);
-					String bakname = bakPath+File.separator+sha1Str.substring(0,2);
+					String temFold = sha1Str.substring(0,2);
+					String bakname = bakPath + File.separator + temFold;
 					File bakFile = new File(bakname);
 					if(!bakFile.exists()){
 						bakFile.mkdir();
 					}
 					bakname = bakname + File.separator + sha1Str.substring(2);
-		            byte[] contentBytes = ZLibUtils.compress(Files.readAllBytes(Paths.get(file[i].toString())));   
+		            byte[] contentBytes = ZLibUtil.compress(Files.readAllBytes(Paths.get(file[i].toString())));   
 		            Files.write(Paths.get(bakname), contentBytes,
 		                    StandardOpenOption.CREATE);
+
+		   
+		            // 添加文件到rar中
+		            bakFile = new File(bakname);
+		            if(bakFile.length()<=maxSize){
+                        if(size + bakFile.length() >= maxSize){
+                        	rarId += 1;
+                            size = 0;
+                        }                   
+                        size += bakFile.length();
+                    	ZipUtil.addFileInZip(bakname,temFold, this.cachPath +File.separator + monitorTask.getTaskName()+"_"+String.valueOf(rarId)+".rar", monitorTask.getFlagName());
+		            }
+		            
 		            fileIndex.setType("File");
 		            fileIndex.setSize(String.valueOf(file[i].length()));
 		            fileIndex.setSha1(sha1Str);
+		            fileIndex.setRarId(rarId);
 				}
 				fileIndex.setTime(time);
 				fileIndex.setPath(file[i].getAbsolutePath().substring(monitorTask.getMonitorPath().length()));
@@ -219,45 +293,45 @@ public class BackupAndCheckThread extends Thread{
 			return true;
 		}
 		
-		// 下载服务器的文件树
+		HttpHandler httpHandler;
+		byte[] contentBytes;
 		
-		
-		// 检查flag树的Sha1，与服务其那边的sha1 是否相同，不正常则恢复flag与文件
-		if(checkBakFlag()){
-			
-			//根据备份中的flag树整理备份中的文件，不正常则回复文件
-			if(checkBakFile()){
-			
-				// 检查网站文件,发生异常
-				if(!checkWebFile()){
-
-					
-				}
-			}
-			
+		//根据备份中的flag树整理备份中的文件，不正常则回复文件
+		List<Integer> rarIds = checkBakFile();
+		if(rarIds!=null&&!rarIds.isEmpty()){
 			// 恢复备份文件以及网站文件
-			else{
+			qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Bak Files Are Inconsistent : " + monitorTask.getMonitorPath());
+			for(int rarId:rarIds){
+				// 下载相应的rar文件并进行解压
+				httpHandler = IOC.instance().getClassobj(HttpHandler.class);
+				contentBytes = httpHandler.download(monitorTask.getTaskName()+"_"+rarId);
+				if(contentBytes!=null){
+					try {
+						Files.write(Paths.get(cachPath+File.separator+monitorTask.getTaskName()+"_"+rarId), contentBytes,
+						        StandardOpenOption.CREATE);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+					// 解压rar
+					ZipUtil.extractZip(cachPath+File.separator+monitorTask.getTaskName()+"_"+rarId, bakPath, monitorTask.getFlagName());
+					qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Bak Files File Has Fixed : " + monitorTask.getMonitorPath());
+
+				}
 				
 			}
 			
-		}else{
-			// 更换文件树、还原备份文件以及网页源码
-			
 		}
-		
 
-		
+		// 检查网站文件,发生异常
+		if(!checkWebFile()){
+				
+		}
+
+
 		if(monitorTask.getRunMode()==0){
 			return false;
 		}
 		
-		// 关闭
-		try {
-			fileIndexDao.closeConnection();
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
 		
 		// 切换至安全模式
 		qMonitor.offer("True");
@@ -266,23 +340,15 @@ public class BackupAndCheckThread extends Thread{
 		return true;
 	}
 	
-	/**
-	 * 检查索引文件是否正常
-	 * @data 2017年3月11日
-	 * @return
-	 */
-	public boolean checkBakFlag(){
-		String bakFlagSha1 = DataUtil.getSHA1ByFile(new File(bakPath+File.separator+monitorTask.getTaskName()));
-		String cloudFlagSha1 = DataUtil.getSHA1ByFile(new File(cachPath+File.separator+monitorTask.getTaskName()));
-		return bakFlagSha1.equals(cloudFlagSha1) ;
-	}
+
 	
 	/**
 	 * 检查备份文件
 	 * @data 2017年4月11日
 	 * @return
 	 */
-	public boolean checkBakFile(){	
+	public List<Integer> checkBakFile(){	
+		List<Integer> rarIds = new ArrayList();
 		try {
 			// 查询文件树
 			List<FileIndex> fileIndexList = fileIndexDao.queryIndex();
@@ -294,7 +360,7 @@ public class BackupAndCheckThread extends Thread{
 			// 遍历文件树
 			for(FileIndex fileIndex:fileIndexList){
 				if(monitorTask.getRunMode()==0){
-					return true;
+					return null;
 				}
 				
 				// 如果是文件则计算备份文件的sha1
@@ -302,11 +368,11 @@ public class BackupAndCheckThread extends Thread{
 					bakname = bakPath + File.separator + fileIndex.getSha1().substring(0,2)+ File.separator +fileIndex.getSha1().substring(2) ;
 					file = new File(bakname);
 					if(!file.exists()){
-						return false;
+						rarIds.add(fileIndex.getRarId());
 					}else{
-						bakSha1 = DataUtil.getSHA1(ZLibUtils.decompress(Files.readAllBytes(Paths.get(bakname))));
+						bakSha1 = DataUtil.getSHA1(ZLibUtil.decompress(Files.readAllBytes(Paths.get(bakname))));
 						if(!fileIndex.getSha1().equals(bakSha1)){
-							return false;
+							rarIds.add(fileIndex.getRarId());
 						}
 					}		
 				}
@@ -314,16 +380,17 @@ public class BackupAndCheckThread extends Thread{
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return true;
+		return DataUtil.removeDuplicate(rarIds);
 	}
 	
+
 	
 	/**
 	 * 检查网站文件
 	 * @data 2017年4月11日
 	 * @return
 	 */
-	public boolean checkWebFile(){	
+	public boolean checkWebFile(){					
 		try {
 			// 查询文件树
 			List<FileIndex> fileIndexList = fileIndexDao.queryIndex();
@@ -338,16 +405,20 @@ public class BackupAndCheckThread extends Thread{
 				}
 				
 				webFile = monitorTask.getMonitorPath() + fileIndex.getPath();  
-				
-				// 如果是文件则计算备份文件的sha1
+				// 如果是文件则计算网站文件的sha1
 				if(fileIndex.getType().equals("File")){
 					file = new File(webFile);
 					if(!file.exists()){
-						return false;
+						qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Web Site File Is Inconsistent : " + monitorTask.getMonitorPath() + fileIndex.getPath());
+						restoreFile(fileIndex);
+						qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Web Site Files Has Fixed : " + monitorTask.getMonitorPath() + fileIndex.getPath());
+
 					}else{
-						webSha1 = DataUtil.getSHA1(webFile);
+						webSha1 = DataUtil.getSHA1ByFile(file);
 						if(!fileIndex.getSha1().equals(webSha1)){
-							return false;
+							qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Web Site File Is Inconsistent : " + monitorTask.getMonitorPath() + fileIndex.getPath());
+							restoreFile(fileIndex);
+							qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Web Site Files Has Fixed : " + monitorTask.getMonitorPath() + fileIndex.getPath());
 						}
 					}		
 				}
@@ -356,13 +427,45 @@ public class BackupAndCheckThread extends Thread{
 				else if(fileIndex.getType().equals("Fold")){
 					file = new File(webFile);
 					if(!file.exists()){
-						return false;
+						qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Web Site File Is Inconsistent : " + monitorTask.getMonitorPath() + fileIndex.getPath());
+						file.mkdirs();
+						qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Web Site Files Has Fixed : " + monitorTask.getMonitorPath() + fileIndex.getPath());
 					}	
 				}
 			}
 			
+			// 判断网站文件中多了某个文件
+			checkWebSpilthFile(new File(monitorTask.getMonitorPath()));
+			
 		} catch (Exception e) {
 			e.printStackTrace();
+		}
+		return true;
+	}
+	
+	/**
+	 * 判断网站中是否多了不应该有的文件
+	 * @data 2017年4月19日
+	 * @param files
+	 * @return
+	 */
+	private boolean checkWebSpilthFile(File files){
+		for(File file:files.listFiles()){
+			FileIndex fileIndex;
+			try {
+				fileIndex = this.fileIndexDao.queryOneIndexByPath(file.getAbsolutePath().substring(monitorTask.getMonitorPath().length()));
+				if(fileIndex==null){
+					qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Web Site File Is Inconsistent : " + monitorTask.getMonitorPath() + fileIndex.getPath());
+					FileUtil.deleteAll(file);
+					qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tThe Web Site Files Has Fixed : " + monitorTask.getMonitorPath() + fileIndex.getPath());
+				}else{
+					if(file.isDirectory()){
+						checkWebSpilthFile(file);
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		return true;
 	}
@@ -374,6 +477,44 @@ public class BackupAndCheckThread extends Thread{
 	public void setQMonitor(Queue<String> qMonitor){
 		this.qMonitor = qMonitor;
 	}
+	
+	public void setStatus(int status){
+		this.status = status;
+	}
+	
+	public int getStatus(){
+		return status;
+	}
+	
+	/**
+	 * 还原文件
+	 * @param dir
+	 */
+	private boolean restoreFile(FileIndex fileIndex){
+		// 如果父路径不存在， 则创建
+		File file = new File(monitorTask.getMonitorPath()+fileIndex.getPath());
+		while(!file.getParentFile().exists()){
+			file.getParentFile().mkdirs();
+		}
+					
+		// 恢复文件
+		String bakname = this.bakPath + File.separator + fileIndex.getSha1().substring(0,2);
+		bakname = bakname + File.separator + fileIndex.getSha1().substring(2);
+		byte[] contentBytes = null;
+		try {
+			contentBytes = ZLibUtil.decompress(Files.readAllBytes(Paths.get(bakname)));
+			Files.write(Paths.get(monitorTask.getMonitorPath()+fileIndex.getPath()), contentBytes,StandardOpenOption.CREATE);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+			
+		return true;
+	}
+	
+	
+	
 	
 }
 //

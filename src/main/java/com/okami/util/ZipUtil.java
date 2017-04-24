@@ -20,7 +20,9 @@ public class ZipUtil {
 
 	/**
 	 * 添加文件夹到zip中
-	 * @param inPath 
+	 * @data 2017年4月18日
+	 * @param inPath
+	 * @param storagePath
 	 * @param outPath
 	 * @param password
 	 * @return
@@ -111,7 +113,7 @@ public class ZipUtil {
 	/**
 	 * 从zip中删除文件
 	 * @param inPath
-	 * @param outPath
+	 * @param storagePath
 	 * @param password
 	 * @return
 	 */
@@ -217,11 +219,11 @@ public class ZipUtil {
 		}
 	}
 	
-    /**
-     * 测试zip 压缩算法
-     */
-    public static void main(String[] args) {
-    	System.out.println("Zip压缩／解压缩测试");  
+//    /**
+//     * 测试zip 压缩算法
+//     */
+//    public static void main(String[] args) {
+//    	System.out.println("Zip压缩／解压缩测试");  
     	
 //    	System.out.println("添加文件夹压缩文件");  
 //		String inPath = "C:\\Users\\dell\\Desktop\\测试文件";  
@@ -261,6 +263,6 @@ public class ZipUtil {
 //    	String storagePath5 = "测试文件\\浙江工商大学毕业论文模板201435";
 //    	ZipUtil.extractFileFromZip(inPath5, storagePath5, outPath5, password5);
     	
-    	System.out.println("已经输出！"); 
-    }
+//    	System.out.println("已经输出！"); 
+//    }
 }

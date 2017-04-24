@@ -70,6 +70,7 @@ public class ConfigBean {
 
 	
 	public ConfigBean(){
+		
 		this.remoteMode = false;
 		this.delay = 60;
 		this.storagePath = System.getProperty("user.dir");

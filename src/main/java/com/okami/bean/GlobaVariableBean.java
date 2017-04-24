@@ -53,6 +53,7 @@ public class GlobaVariableBean {
 		
 		// 开启数据库连接
 		monitorTaskDao.setDataSource(new DBConfig().dataSource());
+
 	}
 	
 	public List<MonitorTask> getMonitorTaskList(){

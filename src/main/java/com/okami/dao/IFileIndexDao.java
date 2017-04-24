@@ -35,6 +35,15 @@ public interface IFileIndexDao {
 	public List<FileIndex> queryIndexByPath(String path) throws Exception ;
 	
 	/**
+	 * 查询单个索引
+	 * @data 2017年4月19日
+	 * @param path
+	 * @return
+	 * @throws Exception
+	 */
+	public FileIndex queryOneIndexByPath(String path) throws Exception ;
+	
+	/**
 	 * 查询索引 like path
 	 * @data 2017年4月11日
 	 * @param path
@@ -51,6 +60,8 @@ public interface IFileIndexDao {
 	 * @throws Exception
 	 */
 	public boolean insertIndex(FileIndex fileIndex) throws Exception ;
+	
+	
 	
 	/**
 	 * 批量插入索引

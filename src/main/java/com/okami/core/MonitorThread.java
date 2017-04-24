@@ -22,7 +22,7 @@ import com.okami.entities.FileIndex;
 import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
-import com.okami.util.ZLibUtils;
+import com.okami.util.ZLibUtil;
 
 import net.contentobjects.jnotify.*;  
 
@@ -155,6 +155,7 @@ public class MonitorThread {
         
         public Listener(MonitorTask monitorTask,FileIndexDao fileIndexDao){
             this.monitorTask = monitorTask;
+            this.fileIndexDao = fileIndexDao;
             String whiteStr = monitorTask.getWhiteList();
             String blackStr = monitorTask.getBlackList();
 
@@ -323,22 +324,25 @@ public class MonitorThread {
 				
                 // 检测到文件被创建
                 if(action.equals("Created")){
+                	
                 	// 如果flag文件中没有该文件，则进行删除
                 	if(fileIndex==null){
 	                    qHeartBeats.offer(time+"\t"+action+"\t"+filename);
 						FileUtil.deleteAll(new File(filename));
-						qHeartBeats.offer(DataUtil.getTime()+"\t"+action+"\t"+filename+" have done !");
+						qHeartBeats.offer(DataUtil.getTime()+"\t"+action+"\t"+filename+" deal success !");
 	                }
                 	
 	                // flag文件中存在，则进行md5校验
 	                else{
 	                	if(fileIndex.getType().equals("File")){
+	         
 	                		String sha11 = DataUtil.getSHA1ByFile(new File(filename));
+	             
 	                		String sha12 = fileIndex.getSha1();
 	                		if(!sha12.equals( sha11)){
 	                			qHeartBeats.offer(time+"\t"+action+"\t"+filename);
 	                			FileUtil.deleteAll(new File(filename));
-						        qRepaire.offer("Restore\t"+action+"\t"+indexPath+"\t"+monitorTask.getTaskName());
+						        qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
 							}
 		                }
 	                }
@@ -349,16 +353,22 @@ public class MonitorThread {
 	            	// 如果flag文件中有该文件，则进行还原
 		            if(fileIndex!=null){
 		            	qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-		                qRepaire.offer("Restore\t"+action+"\t"+indexPath+"\t"+monitorTask.getTaskName());
+		                qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
 		            }
 	            }
                 
 	            else if(action.equals("Modified")){
 	            	// 如果flag文件中有该文件，则进行还原
 	            	if(fileIndex!=null){
-            			qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-            			FileUtil.deleteAll(new File(filename));
-				        qRepaire.offer("Restore\t"+action+"\t"+indexPath+"\t"+monitorTask.getTaskName());
+	                	if(fileIndex.getType().equals("File")){
+	                		String sha11 = DataUtil.getSHA1ByFile(new File(filename));
+	                		String sha12 = fileIndex.getSha1();
+	                		if(!sha12.equals( sha11)){
+	                			qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+	                			FileUtil.deleteAll(new File(filename));
+						        qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
+							}
+		                }
 	            	}
 	            }
                 

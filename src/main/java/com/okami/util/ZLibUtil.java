@@ -15,7 +15,7 @@ import java.util.zip.InflaterInputStream;
  * @author orleven
  * @date 2016年12月31日
  */
-public class ZLibUtils {
+public class ZLibUtil {
   
     /** 
      * 压缩 
@@ -141,7 +141,7 @@ public class ZLibUtils {
 //        byte[] data = ZLibUtils.compress(input);  
 //        System.err.println("压缩后字节长度:\t" + data.length);  
   
-        byte[] output = ZLibUtils.decompress(data);  
+        byte[] output = ZLibUtil.decompress(data);  
         System.err.println("解压缩后字节长度:\t" + output.length);  
         String outputStr = new String(output);  
         System.err.println("输出字符串:\t" + outputStr);  

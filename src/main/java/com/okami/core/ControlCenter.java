@@ -4,6 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Dictionary;
@@ -17,13 +20,14 @@ import org.springframework.stereotype.Component;
 import com.okami.MonitorClientApplication;
 import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
-import com.okami.common.ParameterHandle;
+import com.okami.common.HttpHandler;
 import com.okami.config.DBConfig;
 import com.okami.dao.impl.FileIndexDao;
 import com.okami.dao.impl.MonitorTaskDao;
 import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
+import com.okami.util.IniUtil;
 
 /**
  * 控制心中类,到时候名字要改成auto
@@ -41,15 +45,22 @@ public class ControlCenter {
 	public boolean init(){
 		// 获取配置
 		ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
-		
-		
-        // 加载配置文件，到时候改
-        configBean.setStoragePath("C:\\Users\\dell\\Desktop\\存储地址");
-        configBean.setLhost("127.0.0.1");
-        configBean.setRhost("127.0.0.1");
-        configBean.setLport("5002");
-        configBean.setRport("5001");
-        configBean.setRemoteMode(true);
+		  
+        // 加载配置文件
+        configBean = IniUtil.getConfig(configBean,System.getProperty("user.dir") + File.separator + "config/config.ini");
+//        if(configBean == null){
+//        	configBean = IOC.instance().getClassobj(ConfigBean.class);
+//            configBean.setStoragePath("C:\\Users\\dell\\Desktop\\存储地址");
+//            configBean.setLhost("127.0.0.1");
+//            configBean.setRhost("192.168.199.183");
+//            configBean.setLport("5002");
+//            configBean.setRport("80");
+//            configBean.setDelay(60);
+//            configBean.setRemoteMode(true);
+//        	IniUtil.setConfig(configBean,System.getProperty("user.dir") + File.separator + "config/config.ini");
+//        	
+//        	// 退出程序，并要求使用者设置配置文件
+//        }
        
         // 初始化路径
         initPath();
@@ -64,7 +75,10 @@ public class ControlCenter {
 		RepaireThread repaireThread = IOC.instance().getClassobj(RepaireThread.class);
 		repaireThread.init();
 		repaireThread.start();
-
+		
+		// 功能性函数初始化
+		HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);
+		httpHandler.init();
 		return true;
 	}
 	
@@ -165,17 +179,18 @@ public class ControlCenter {
 		// 人工模式
 		if(monitorTask.getRunMode() == 1){
 			humanMonitor(monitorTask,fileIndexDao);
+			return true;
 		}
 		
 		// 防篡改模式
 		else if(monitorTask.getRunMode() == 2){
-			
-			if(monitorTask.getBCMode()==0){
-				backupMonitor(monitorTask,fileIndexDao);
+		
+			if(!safeMonitor(monitorTask,fileIndexDao)){
+				GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
+				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Is Lost : " + monitorTask.getMonitorPath());
+				return false;
 			}
-			else if(monitorTask.getBCMode()==1){
-//				backupMonitor(monitorTask,fileIndexDao);
-			}
+
 		}
 		
 		return true;
@@ -210,19 +225,58 @@ public class ControlCenter {
 	 * @data 2017年4月10日
 	 * @return
 	 */
-	public boolean backupMonitor(MonitorTask monitorTask,FileIndexDao fileIndexDao){
+	public boolean safeMonitor(MonitorTask monitorTask,FileIndexDao fileIndexDao){
 		// 初始化
 		ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
 		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
 		String bakPathStr = configBean.getBakPath()+File.separator+monitorTask.getFlagName();
 		Queue<String> qMonitor = new LinkedList<String>();
 		
-		// 删除原来的树
+		// 备份模式下删除原来的树
 		if(monitorTask.getBCMode() == 0){
 			File bakPath = new File(bakPathStr);
 			if(bakPath.exists()){
 				FileUtil.deleteAll(bakPath);
 			}
+		}
+		
+		// 自检模式模式下,检查文件树
+		else{
+			// 下载服务器的文件树
+			HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);
+			File bakFlag = new File(configBean.getBakPath()+File.separator+monitorTask.getFlagName());
+			byte[] contentBytes = httpHandler.download(monitorTask.getFlagName());
+			String cachPath = configBean.getCachPath()+File.separator+monitorTask.getTaskName()+File.separator+monitorTask.getFlagName();
+			if(contentBytes!=null){
+				try {
+					Files.write(Paths.get(cachPath), contentBytes,StandardOpenOption.CREATE);
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				
+				// 检查flag树的Sha1，与服务其那边的sha1 是否相同，不正常则恢复flag与文件
+				if(!bakFlag.exists()|| !DataUtil.getSHA1ByFile(bakFlag).equals(DataUtil.getSHA1ByFile(new File(cachPath)))){
+					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Is Inconsistent : " + monitorTask.getMonitorPath());
+				    
+					// 将cach下的flag文件复制到bak目录下
+					File source = new File(cachPath);
+					File dest = new File(configBean.getBakPath()+File.separator+monitorTask.getFlagName());
+					try {
+						FileUtil.deleteAll(dest);
+						Files.copy(source.toPath(), dest.toPath());
+					} catch (IOException e) {
+						e.printStackTrace();
+					}catch (Exception e) {
+						e.printStackTrace();
+					}
+					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Has Fixed : " + monitorTask.getMonitorPath());
+				}
+				
+			}else{
+				if(!bakFlag.exists()){
+					return false;
+				}
+			} 
 		}
 		
 		// 连接数据库
@@ -245,8 +299,6 @@ public class ControlCenter {
 		backupAndCheckThread.init(monitorTask, fileIndexDao);
 		backupAndCheckThread.setQqueue(globaVariableBean.getQHeartBeats(), qMonitor, globaVariableBean.getQRepaire());
 		backupAndCheckThread.start();
-		
-
 		
 		globaVariableBean.getQMonitorList().add(qMonitor);
 		globaVariableBean.getMonitorThreadList().add(monitorThread);
@@ -291,13 +343,15 @@ public class ControlCenter {
 					globaVariableBean.getBackupAndCheckThreadList().remove(i);
 					globaVariableBean.getFileIndexDaoList().remove(i);
 					globaVariableBean.getMonitorTaskList().remove(i);
+					return true;
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return true;
+		return false;
 	}
+	
 	
 	public void work() {
 		
@@ -375,8 +429,5 @@ public class ControlCenter {
 //				e.printStackTrace();
 //			}
 //		}
-
 	}
-
-
 }

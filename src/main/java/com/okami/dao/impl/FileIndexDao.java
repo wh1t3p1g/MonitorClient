@@ -57,7 +57,8 @@ public class FileIndexDao implements IFileIndexDao{
 	    	int read = rs.getInt("Read");
 	    	int write = rs.getInt("Write");
 	    	int exec = rs.getInt("Exec");
-	    	FileIndex fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec);
+	    	int rarId = rs.getInt("RarId");
+	    	FileIndex fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
 	    	list.add(fileIndex);
 	    }
 	    return list;
@@ -66,7 +67,7 @@ public class FileIndexDao implements IFileIndexDao{
 	@Override
 	public boolean insertIndex(FileIndex fileIndex) throws Exception {
 		String sql = "INSERT INTO FileIndex " +
-				"(Path,Sha1,Size,Type,Time,Owner,OwnerGroup,Status,Read,Write,Exec) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+				"(Path,Sha1,Size,Type,Time,Owner,OwnerGroup,Status,Read,Write,Exec,RarId) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 //		Connection conn = null;
 		
 //		try {
@@ -83,6 +84,7 @@ public class FileIndexDao implements IFileIndexDao{
 			ps.setInt(9,  fileIndex.getRead());
 			ps.setInt(10,  fileIndex.getWrite());
 			ps.setInt(11,  fileIndex.getExec());
+			ps.setInt(12,  fileIndex.getRarId());
 			ps.executeUpdate();
 			ps.close();
 			
@@ -101,7 +103,7 @@ public class FileIndexDao implements IFileIndexDao{
 	@Override
 	public boolean insertIndex(List<FileIndex> fileIndexList) throws Exception {
 		String sql = "INSERT INTO FileIndex " +
-				"(Path,Sha1,Size,Type,Time,Owner,OwnerGroup,Status,Read,Write,Exec) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+				"(Path,Sha1,Size,Type,Time,Owner,OwnerGroup,Status,Read,Write,Exec,Rarid) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 //		Connection conn = null;
 		
 //		try {
@@ -120,6 +122,7 @@ public class FileIndexDao implements IFileIndexDao{
 				ps.setInt(9,  fileIndexList.get(i).getRead());
 				ps.setInt(10,  fileIndexList.get(i).getWrite());
 				ps.setInt(11,  fileIndexList.get(i).getExec());
+				ps.setInt(12,  fileIndexList.get(i).getRarId());
 				ps.executeUpdate();
 			}
 			ps.close();
@@ -137,7 +140,7 @@ public class FileIndexDao implements IFileIndexDao{
 	
 	@Override
 	public boolean updateIndex(FileIndex fileIndex) throws Exception {
-		String sql = "UPDATE FileIndex SET Sha1=?,Size=?,Type=?,Time=?,Owner=?,Group=?,Status=? ,Read=?,Write=?,Exec=? WHERE Path = ?";
+		String sql = "UPDATE FileIndex SET Sha1=?,Size=?,Type=?,Time=?,Owner=?,Group=?,Status=? ,Read=?,Write=?,Exec=?,RarId=? WHERE Path = ?";
 //		Connection conn = null;
 		
 //		try {
@@ -154,6 +157,7 @@ public class FileIndexDao implements IFileIndexDao{
 			ps.setInt(9,  fileIndex.getRead());
 			ps.setInt(10,  fileIndex.getWrite());
 			ps.setInt(11,  fileIndex.getExec());
+			ps.setInt(11,  fileIndex.getRarId());
 			ps.executeUpdate();
 			ps.close();
 			
@@ -207,7 +211,8 @@ public class FileIndexDao implements IFileIndexDao{
 				+ "'Exec'  INTEGER,"
 				+ "'Owner'  TEXT,"
 				+ "'OwnerGroup'  TEXT,"
-				+ "'Status'  INTEGER NOT NULL"
+				+ "'Status'  INTEGER NOT NULL,"
+				+ "'RarId'  INTEGER"
 				+ ");";
 //		Connection conn = null;
 //		
@@ -263,7 +268,7 @@ public class FileIndexDao implements IFileIndexDao{
 		ps.setString(1, pathname);
 	    List<FileIndex> list = new ArrayList<FileIndex>();
 		ResultSet rs = ps.executeQuery();
-		if (rs.next()) {
+		while (rs.next()) {
 		    Integer id = rs.getInt("Id");
 		    String path = rs.getString("Path");
 	    	String sha1 = rs.getString("Sha1");
@@ -276,7 +281,8 @@ public class FileIndexDao implements IFileIndexDao{
 	    	int read = rs.getInt("Read");
 	    	int write = rs.getInt("Write");
 	    	int exec = rs.getInt("Exec");
-	    	FileIndex fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec);
+	    	int rarId = rs.getInt("RarId");
+	    	FileIndex fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
 	    	list.add(fileIndex);
 		}
 		rs.close();
@@ -294,7 +300,7 @@ public class FileIndexDao implements IFileIndexDao{
 		ps.setString(1, pathname+"%");
 	    List<FileIndex> list = new ArrayList<FileIndex>();
 		ResultSet rs = ps.executeQuery();
-		if (rs.next()) {
+		while (rs.next()) {
 		    Integer id = rs.getInt("Id");
 		    String path = rs.getString("Path");
 	    	String sha1 = rs.getString("Sha1");
@@ -307,7 +313,8 @@ public class FileIndexDao implements IFileIndexDao{
 	    	int read = rs.getInt("Read");
 	    	int write = rs.getInt("Write");
 	    	int exec = rs.getInt("Exec");
-	    	FileIndex fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec);
+	    	int rarId = rs.getInt("RarId");
+	    	FileIndex fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
 	    	list.add(fileIndex);
 		}
 		rs.close();
@@ -325,6 +332,36 @@ public class FileIndexDao implements IFileIndexDao{
 		ps.executeUpdate();
 		ps.close();
 		return true;
+	}
+
+
+
+	@Override
+	public FileIndex queryOneIndexByPath(String pathname) throws Exception {
+		String sql = "Select * from FileIndex where Path = ?";
+		PreparedStatement ps = conn.prepareStatement(sql);
+		ps.setString(1, pathname);
+	    FileIndex fileIndex  = null;
+		ResultSet rs = ps.executeQuery();
+		if (rs.next()) {
+		    Integer id = rs.getInt("Id");
+		    String path = rs.getString("Path");
+	    	String sha1 = rs.getString("Sha1");
+	    	String size = rs.getString("Size");
+	    	String type = rs.getString("Type");
+	    	String time = rs.getString("Time");
+	    	String owner = rs.getString("Owner");
+	    	String group = rs.getString("OwnerGroup");
+	    	int status = rs.getInt("Status");
+	    	int read = rs.getInt("Read");
+	    	int write = rs.getInt("Write");
+	    	int exec = rs.getInt("Exec");
+	    	int rarId = rs.getInt("RarId");
+	    	fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
+		}
+		rs.close();
+		ps.close();
+		return fileIndex;
 	}
 
 }

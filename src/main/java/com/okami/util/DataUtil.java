@@ -10,8 +10,11 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.MessageDigest;
 import java.text.DateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.codec.digest.DigestUtils;
@@ -142,6 +145,24 @@ public class DataUtil {
     }
 
     /**
+     * 
+     * @data 2017年4月24日
+     * @param params
+     * @return
+     */
+    public static String toJson(Object src){
+        Gson gson=new Gson();
+        return gson.toJson(src);
+    }
+
+    
+    public static Object fromJsonToObject(String jsonStr){
+        Gson gson=new Gson();
+        Type type=new TypeToken<Object>(){}.getType();
+        return gson.fromJson(jsonStr,type);
+    }
+    
+    /**
      * Json string to HashMap<String,Object>
      * @param jsonStr
      * @return HashMap<String,Object>
@@ -150,5 +171,17 @@ public class DataUtil {
         Gson gson=new Gson();
         Type type=new TypeToken<HashMap<String,Object>>(){}.getType();
         return gson.fromJson(jsonStr,type);
+    }
+    
+    /**
+     * ArrayList Integer 去重
+     * @data 2017年4月19日
+     * @param arrayList
+     * @return
+     */
+    public static List<Integer> removeDuplicate(List<Integer> arrayList){
+        arrayList.clear(); 
+        arrayList.addAll(new HashSet(arrayList)); 
+    	return arrayList;
     }
 }
