@@ -23,6 +23,8 @@ public class WebshellFeatures {
             File file=new File("config/webshellFeatures.ini");
             if(file.exists()){
                 ini=new Wini(file);
+
+
                 MonitorClientApplication.log.info("load webshellFeatures.ini success");
             }else{
                 MonitorClientApplication.log.error("load webshellFeatures.ini error");

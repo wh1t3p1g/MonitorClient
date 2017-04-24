@@ -4,6 +4,7 @@ import com.okami.core.IOC;
 import com.okami.util.IniUtil;
 import java.io.File;
 import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.embedded.ConfigurableEmbeddedServletContainer;
@@ -18,16 +19,15 @@ public class MonitorClientApplication extends SpringBootServletInitializer imple
 
 	public static ApplicationContext  ctx;
 
-	public static Log log ;
+	public static Log log= LogFactory.getLog(MonitorClientApplication.class);
 	
 	public static void main(String[] args) {	
 		IOC.ctx  = SpringApplication.run(MonitorClientApplication.class, args); 
-		ctx =  IOC.ctx; 
-		log = IOC.log; 
+		ctx =  IOC.ctx;
 		
 		ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
 		controlCenter.init();
-        controlCenter.audoLoad();
+//        controlCenter.audoLoad();
 	}
 
 	@Override

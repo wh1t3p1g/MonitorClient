@@ -1,7 +1,6 @@
 package com.okami.plugin.scanner.core.scanner.impl;
 
 import com.okami.MonitorClientApplication;
-import com.okami.entities.Monitor;
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.plugin.scanner.core.handler.scanner.ssdeep.FuzzyHash;
 import com.okami.plugin.scanner.core.scanner.AbstractScanner;
