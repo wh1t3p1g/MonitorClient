@@ -1,18 +1,15 @@
 package com.okami.plugin.scanner.core.scanner.impl;
 
 import com.okami.MonitorClientApplication;
+import com.okami.entities.Monitor;
 import com.okami.plugin.scanner.bean.FileContent;
-import com.okami.plugin.scanner.bean.WebshellFeatures;
-import com.okami.plugin.scanner.core.common.EnumFiles;
-import com.okami.plugin.scanner.core.handler.scanner.ssdeep.Ssdeep;
+import com.okami.plugin.scanner.core.handler.scanner.ssdeep.FuzzyHash;
 import com.okami.plugin.scanner.core.scanner.AbstractScanner;
 import com.okami.util.FileUtil;
-import info.debatty.java.spamsum.SpamSum;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.*;
 
 /**
@@ -23,35 +20,35 @@ import java.util.*;
  */
 @Component
 @Scope("prototype")
-public class FuzzyHashScanner extends AbstractScanner implements Runnable{
+public class FuzzyHashScanner extends AbstractScanner{
 
+    @Autowired
+    private FuzzyHash fuzzyHash;
 
-    public static int threshold=90;
-
-
-
-    @Override
-    public void run() {
-//        Map<String,String> RetMetaData=this.calculate();
-//        System.out.println("scan done");
-//        System.out.println(RetMetaData.getSsdeepScanResults().size());
-    }
+    private int threshold=90;
 
     @Override
     public Map<String,String> calculate() {
-//        Ssdeep ssdeep=MonitorClientApplication.ctx.getBean(Ssdeep.class);
-//        ssdeep.setThreshold(threshold);
-//        for(FileContent fileContent:getFileContents()){
-//            if(fileContent.getSize()<=4096)continue;
-//            String result=ssdeep.calculate(fileContent);
-//            if(!result.equals("false")){
-//                System.out.println("is vul "+fileContent.getFilePath());
-//                task.getSsdeepScanResults().put(fileContent.getFilePath(),result);
-//            }
-//        }
-//        retMetaData.setFinishTime(new Date());
-//        retMetaData.setScanLevel("2");
-//        return retMetaData;
-        return null;
+        Map<String,String> retData=new HashMap<>();
+        fuzzyHash.setThreshold(threshold);
+        List<FileContent> fileContents=getTask().getFileContents();
+        for(FileContent fileContent:fileContents){
+            if(fileContent.getSize()<=4096)continue;
+            MonitorClientApplication.log.info("start checking "+fileContent.getFilePath());
+            String content= FileUtil.readAll(fileContent.getFilePath());
+            String result= fuzzyHash.calculate(content);
+            if(!result.equals("false")){
+                retData.put(fileContent.getFilePath(),result);
+            }
+        }
+        return retData;
+    }
+
+    public int getThreshold() {
+        return threshold;
+    }
+
+    public void setThreshold(int threshold) {
+        this.threshold = threshold;
     }
 }

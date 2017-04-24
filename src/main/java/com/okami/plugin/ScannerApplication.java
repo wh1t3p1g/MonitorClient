@@ -3,9 +3,11 @@ package com.okami.plugin;
 import com.okami.MonitorClientApplication;
 import com.okami.plugin.scanner.bean.BaseTask;
 import com.okami.plugin.scanner.bean.FileContent;
+import com.okami.bean.GlobalBean;
 import com.okami.plugin.scanner.core.common.AssignScanner;
 import com.okami.plugin.scanner.core.common.EnumFiles;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -18,15 +20,13 @@ import java.util.List;
  * @since 2017/1/15
  */
 @Component
+@Scope("prototype")
 public class ScannerApplication implements Runnable{
 
     private Thread t;
 
     private BaseTask task;
-    /**
-     * 扫描状态 0表示空闲 1表示正在扫描
-     */
-    private int status=0;
+
     /**
      * 注入枚举文件对象
      */
@@ -37,10 +37,8 @@ public class ScannerApplication implements Runnable{
      */
     @Autowired
     private AssignScanner assignScanner;
-
-    public ScannerApplication(){
-        status=0;
-    }
+    @Autowired
+    private GlobalBean globalBean;
 
     /**
      * 程序的主体
@@ -58,7 +56,9 @@ public class ScannerApplication implements Runnable{
             // todo
             return ;//0 表示正在运行
         }
-        status=1;
+        globalBean.setStatus(1);
+        globalBean.setTaskId(task.getTaskId());
+        globalBean.setTaskName(task.getTaskName());
         //枚举所有文件
         enumFiles.setTask(task);
         List<FileContent> fileContents=enumFiles.run();
@@ -66,7 +66,7 @@ public class ScannerApplication implements Runnable{
         MonitorClientApplication.log.info("共"+fileContents.size()+"待扫描文件");
         //分配scanner
         assignScanner.setTask(task);
-        int result=assignScanner.assignTask();//返回分配结果
+        globalBean.setStatus(assignScanner.assignTask());//返回分配结果
         // result通知服务器端
         // todo
     }
@@ -79,7 +79,7 @@ public class ScannerApplication implements Runnable{
     }
 
     public Boolean isRunning(){
-        return status==1;
+        return globalBean.getStatus()==1;
     }
 
     public BaseTask getTask() {

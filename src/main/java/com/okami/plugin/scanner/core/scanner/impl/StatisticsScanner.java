@@ -1,7 +1,10 @@
 package com.okami.plugin.scanner.core.scanner.impl;
 
 import com.okami.plugin.scanner.core.scanner.AbstractScanner;
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -9,14 +12,12 @@ import java.util.Map;
  * @since 2017/1/3
  * 基于统计学扫描
  */
-public class StatisticsScanner extends AbstractScanner implements Runnable{
+@Component
+@Scope("prototype")
+public class StatisticsScanner extends AbstractScanner{
     @Override
     public Map<String,String> calculate() {
-        return null;
-    }
-
-    @Override
-    public void run() {
-
+        Map<String,String> retData=new HashMap<>();
+        return retData;
     }
 }

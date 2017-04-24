@@ -3,15 +3,12 @@ package com.okami.plugin.scanner.core.handler.scanner.ssdeep;
 import com.okami.MonitorClientApplication;
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.plugin.scanner.bean.WebshellFeatures;
-import com.okami.plugin.scanner.core.common.EnumFiles;
 import com.okami.util.FileUtil;
 import info.debatty.java.spamsum.SpamSum;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,7 +17,7 @@ import java.util.Map;
  */
 @Component
 @Scope("prototype")
-public class Ssdeep {
+public class FuzzyHash {
 
     /**
      * 阀值
@@ -34,10 +31,15 @@ public class Ssdeep {
      */
     private Map<String,String> features;
 
-    public Ssdeep(){
-        WebshellFeatures webshellFeatures=MonitorClientApplication.ctx.getBean(WebshellFeatures.class);
+    public FuzzyHash(){
+        WebshellFeatures webshellFeatures=
+                MonitorClientApplication.ctx.getBean(WebshellFeatures.class);
+
         this.spamSum=new SpamSum();
-        this.features=webshellFeatures.load("ssdeep");
+        if(webshellFeatures!=null)
+            this.features=webshellFeatures.load("FuzzHash");
+        else
+            MonitorClientApplication.log.error("WebshellFeature<FuzzHash> load error");
     }
 
 
@@ -67,14 +69,8 @@ public class Ssdeep {
 //        FileUtil.write("config/webshellFeatures.ini",content);
     }
 
-    /**
-     *
-     * @return
-     */
-    public String calculate(FileContent fileContent) {
-        String content= FileUtil.readAll(fileContent.getFilePath());
+    public String calculate(String content) {
         String hash=this.spamSum.HashString(content);
-        System.out.println("开始扫描"+fileContent.getFilePath());
         int num;
         for(Map.Entry<String, String> entry : this.features.entrySet()) {
             num=this.spamSum.match(hash,entry.getValue());

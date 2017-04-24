@@ -1,8 +1,10 @@
 package com.okami.controller;
 
 import com.okami.MonitorClientApplication;
+import com.okami.bean.GlobalBean;
 import com.okami.plugin.ScannerApplication;
 import com.okami.plugin.scanner.bean.BaseTask;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,8 +19,11 @@ import javax.servlet.http.HttpServletRequest;
 @RestController
 public class WebshellController {
 
+    @Autowired
+    private GlobalBean globalBean;
+
     @RequestMapping(value="/webshell/newTask",method=RequestMethod.POST)
-    public String test(HttpServletRequest request){
+    public String newTask(HttpServletRequest request){
         BaseTask task= MonitorClientApplication.ctx.getBean(BaseTask.class);
         //设置参数
         task.setTaskName(request.getParameter("task_name"));
@@ -29,15 +34,17 @@ public class WebshellController {
         task.setScriptExtension(request.getParameter("script_extension"));
         task.setFilter(request.getParameter("filter").equals("true"));
         task.setType(Integer.parseInt(request.getParameter("type")));
+        task.setMode(Integer.parseInt(request.getParameter("mode")));
 
         ScannerApplication scannerApplication=
                 MonitorClientApplication.ctx.getBean(ScannerApplication.class);
         if(scannerApplication.isRunning()){
-            return "Task "+scannerApplication.getTask().getTaskName()+"running";
+            return "Task "+globalBean.getTaskName()+" is running";
         }else{
             scannerApplication.setTask(task);
             scannerApplication.start();
-            return "ok";
+
+            return "Task "+task.getTaskName()+" ok";
         }
     }
 }

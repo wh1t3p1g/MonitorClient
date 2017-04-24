@@ -10,10 +10,8 @@ import java.util.Map;
  * @since 2017/1/1
  */
 public abstract class AbstractScanner {
-    /**
-     * 包含待扫描文件的文件列表
-     */
-    private List<FileContent> fileContents;
+
+    private BaseTask task;
 
     /**
      * 扫描计算返回结果
@@ -21,11 +19,11 @@ public abstract class AbstractScanner {
      */
     public abstract Map<String,String> calculate();
 
-    public List<FileContent> getFileContents() {
-        return fileContents;
+    public BaseTask getTask() {
+        return task;
     }
 
-    public void setFileContent(List<FileContent> fileContents) {
-        this.fileContents = fileContents;
+    public void setTask(BaseTask task) {
+        this.task = task;
     }
 }

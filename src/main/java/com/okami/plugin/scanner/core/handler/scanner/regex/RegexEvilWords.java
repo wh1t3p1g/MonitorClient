@@ -1,5 +1,6 @@
 package com.okami.plugin.scanner.core.handler.scanner.regex;
 
+import com.okami.MonitorClientApplication;
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.plugin.scanner.bean.WebshellFeatures;
 import com.okami.util.FileUtil;
@@ -10,6 +11,8 @@ import org.springframework.stereotype.Component;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author wh1t3P1g
@@ -23,41 +26,28 @@ public class RegexEvilWords {
 
     private Map<String,String> features;
 
-    @Autowired
-    private WebshellFeatures webshellFeatures;
-
 
     public RegexEvilWords(){
-        this.features=new HashMap<>();
+        WebshellFeatures webshellFeatures=
+                MonitorClientApplication.ctx.getBean(WebshellFeatures.class);
+        this.features=webshellFeatures.load("Static");
     }
 
-    /**
-     *
-     * @return
-     */
-    public String calculate(FileContent fileContent) {
-        String content= FileUtil.readAll(fileContent.getFilePath());
-        System.out.println("开始扫描"+fileContent.getFilePath());
-        // 正则匹配
+    public String calculate(String content){
+        //todo regex
+        for (Map.Entry<String,String> entry:features.entrySet()){
+            Pattern r = buildRegex(entry.getValue());
+            Matcher m = r.matcher(content);
+            if (m.find( )) {
+                System.out.println("Found value: " + m.group());
+                return entry.getKey()+":("+m.group()+")";
+            }
+        }
         return "false";
     }
 
-    public void loadFeatures(String language,Boolean sensitiveWords){
-        Map<String,String> languageList=this.webshellFeatures.load(language);
-        if(sensitiveWords){
-            Map<String,String> sensitiveWordsList=this.webshellFeatures.load("sensitiveWords");
-            this.features.putAll(sensitiveWordsList);
-        }
-        this.features.putAll(languageList);
-    }
-
-
-    public Map<String, String> getFeatures() {
-        return features;
-    }
-
-    public void setFeatures(Map<String, String> features) {
-        this.features = features;
+    private Pattern buildRegex(String regex){
+        return Pattern.compile(regex,Pattern.CASE_INSENSITIVE);
     }
 
     public List<FileContent> getFileContents() {

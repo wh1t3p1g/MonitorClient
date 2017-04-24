@@ -1,6 +1,8 @@
 package com.okami.plugin.scanner.bean;
 
+import com.okami.MonitorClientApplication;
 import org.ini4j.Wini;
+import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
@@ -18,9 +20,16 @@ public class WebshellFeatures {
 
     public WebshellFeatures(){
         try {
-            ini=new Wini(new File("config/webshellFeatures.ini"));
+            File file=new File("config/webshellFeatures.ini");
+            if(file.exists()){
+                ini=new Wini(file);
+                MonitorClientApplication.log.info("load webshellFeatures.ini success");
+            }else{
+                MonitorClientApplication.log.error("load webshellFeatures.ini error");
+            }
         } catch (IOException e) {
             e.printStackTrace();
+            MonitorClientApplication.log.error("load webshellFeatures.ini error");
         }
     }
 

@@ -47,7 +47,7 @@ public class EnumFiles {
             if(task.isFilter()){
                 fileContents=this.filter(fileContents,task.getExceptPath(),task.getExceptExtension());
             }
-            if(task.getType()==1){//fast scanner
+            if(task.getMode()==1){//fast scanner
                 fileContents=this.filter(fileContents,task.getScriptExtension());
             }
             return fileContents;

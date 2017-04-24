@@ -25,10 +25,18 @@ public class BaseTask {
     private String taskId;
     /**
      * 扫描类型
-     * 1 fast scan
-     * 2 full scan
+     * 1 fuzzyhash scan
+     * 2 static scan
+     * 3 statistic scan
+     * 4 full scan
      */
     private int type;
+    /**
+     * 扫描模式
+     * 1 fast mode
+     * 2 full mode
+     */
+    private int mode;
     /**
      * type 为1时使用
      * 待检查的脚本后缀
@@ -68,7 +76,7 @@ public class BaseTask {
      * 扫描结果集合
      * 基于统计分析=><算法名,top10(filename:value)>
      */
-    private Map<String,Map<String,String>> statisticsScanResults;
+    private Map<String,String> statisticsScanResults;
 
     private List<FileContent> fileContents;
 
@@ -160,11 +168,19 @@ public class BaseTask {
         this.fuzzHashScanResults = fuzzHashScanResults;
     }
 
-    public Map<String, Map<String, String>> getStatisticsScanResults() {
+    public Map<String, String> getStatisticsScanResults() {
         return statisticsScanResults;
     }
 
-    public void setStatisticsScanResults(Map<String, Map<String, String>> statisticsScanResults) {
+    public void setStatisticsScanResults(Map<String, String> statisticsScanResults) {
         this.statisticsScanResults = statisticsScanResults;
+    }
+
+    public int getMode() {
+        return mode;
+    }
+
+    public void setMode(int mode) {
+        this.mode = mode;
     }
 }
