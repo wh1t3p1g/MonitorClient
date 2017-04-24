@@ -1,7 +1,6 @@
-package com.okami.plugin.scanner.core.common;
+package com.okami.plugin.scanner.core.handle;
 
 import com.okami.MonitorClientApplication;
-import com.okami.plugin.scanner.bean.BaseTask;
 import com.okami.plugin.scanner.bean.FileContent;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -24,7 +23,10 @@ import java.util.List;
 @Component
 @Scope("prototype")
 public class EnumFiles {
-    private BaseTask task;
+    /**
+     * 待扫描的文件路径
+     */
+    private String filePath;
 
     /**
      * 文件遍历+填充遍历到的文件属性到FileContent
@@ -32,7 +34,7 @@ public class EnumFiles {
      */
     public List<FileContent> run()
     {
-        Path path= Paths.get(task.getFilePath());
+        Path path= Paths.get(this.filePath);
         List<FileContent> fileContents=new ArrayList<FileContent>();
         ListFileTree listFileTree=new ListFileTree();
         try{
@@ -43,13 +45,6 @@ public class EnumFiles {
                     fileContents.add(fileContent);
                 }
             }
-
-            if(task.isFilter()){
-                fileContents=this.filter(fileContents,task.getExceptPath(),task.getExceptExtension());
-            }
-            if(task.getMode()==1){//fast scanner
-                fileContents=this.filter(fileContents,task.getScriptExtension());
-            }
             return fileContents;
         }catch (IOException e){
             e.printStackTrace();
@@ -58,46 +53,39 @@ public class EnumFiles {
 
     }
 
-    private List<FileContent> filter(List<FileContent> fileContents,String extension){
-        List<FileContent> lists=new ArrayList<>();
-        List<String> extensions=Arrays.asList(extension.split(","));
-        for (FileContent fileContent :fileContents) {
-            String ext=fileContent.getFileExt();
-            if(extensions.contains(ext)){
-                lists.add(fileContent);
+    public static List<FileContent> filter(List<FileContent> fileContents, String[] whitePaths) {
+        if(fileContents==null||fileContents.size()==0)
+            return null;
+        List<FileContent> newFileContents=new ArrayList<FileContent>();
+        List<String> filterExt=
+                Arrays.asList(
+                        "jpg","png","gif","js","css","zip","rar","swf","ttf","dat",
+                        "mp3","mp4","avi","mov","aiff","mpeg","mpg","qt","ram","viv",
+                        "flv","wav","map","svg","woff","woff2","eot","psd"
+                );
+        List<String> filterVideoExt=
+                Arrays.asList("mp3","mp4","avi","mov","aiff","mpeg","mpg","qt","ram","viv",
+                        "flv","wav");
+        for(FileContent fileContent:fileContents){
+            boolean flag=true;
+            for(String whitePath:whitePaths){
+                if(fileContent.getFilePath().contains(whitePath)) {//白名单内部
+                    flag=false;
+                    if(!filterVideoExt.contains(fileContent.getFileExt())) {//白名单内部视频文件不进行扫描
+                        fileContent.setInWhitePath(true);
+                        newFileContents.add(fileContent);
+                    }
+                    break;
+                }
+            }
+            if(flag){//不在白名单内 剔除静态文件 jpg,png,js,css,gif等
+                if(!filterExt.contains(fileContent.getFileExt())){
+                    fileContent.setInWhitePath(false);
+                    newFileContents.add(fileContent);
+                }
             }
         }
-        return lists;
-    }
-
-    private List<FileContent> filter(List<FileContent> fileContents,String exceptPath,String exceptExtension){
-        List<String> exceptPaths=null;
-        List<String> exceptExtensions=null;
-        if(exceptPath!=null)
-            exceptPaths=Arrays.asList(exceptPath.split(","));
-        if(exceptExtension!=null)
-            exceptExtensions=Arrays.asList(exceptExtension.split(","));
-
-
-        List<FileContent> lists=new ArrayList<>();
-        for (FileContent fileContent:fileContents) {
-            String extension=fileContent.getFileExt();
-            String dirname=fileContent.getDirname();
-            dirname=dirname.substring(0,dirname.length()-1);
-            if(exceptExtensions!=null&&
-                !exceptExtension.equals("")&&
-                exceptExtensions.contains(extension)){
-                continue;
-            }
-            if(exceptPath!=null&&
-                !exceptPath.equals("")&&
-                exceptPaths.contains(dirname)){
-                continue;
-            }
-            lists.add(fileContent);
-
-        }
-        return lists;
+        return newFileContents;
     }
 
     /**
@@ -111,13 +99,11 @@ public class EnumFiles {
             DateFormat df = new SimpleDateFormat("yyyy/MM/dd H:m:s");
             FileContent fileContent= MonitorClientApplication.ctx.getBean(FileContent.class);
             String fileName=path.getFileName().toString();
-            String dirname=path.toString().substring(0,path.toString().indexOf(fileName));
             String fileExt=fileName.substring(fileName.lastIndexOf(".")+1).toLowerCase();
             BasicFileAttributeView basicFileAttributeView=
                     Files.getFileAttributeView(path,BasicFileAttributeView.class);
             fileContent.setFilePath(path.toString());//文件全路径
             fileContent.setPath(path);
-            fileContent.setDirname(dirname);
             fileContent.setFileName(fileName);//文件名
             fileContent.setFileExt(fileExt);//文件后缀名
             fileContent.setExecutable(Files.isExecutable(path));//是否可执行
@@ -139,11 +125,24 @@ public class EnumFiles {
 
     }
 
-    public BaseTask getTask() {
-        return task;
+
+    public String getFilePath() {
+        return filePath;
     }
 
-    public void setTask(BaseTask task) {
-        this.task = task;
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
+    }
+
+    public static void main(String[] args)
+    {
+        EnumFiles enumFiles = new EnumFiles();
+        enumFiles.setFilePath("/Users/wh1t3P1g/Desktop/webshell");
+        List<FileContent> fileContents=enumFiles.run();
+        System.out.println(fileContents.size());
+        String[] whitePaths={"/Users/wh1t3P1g/Desktop/webshell/aspx"};
+        fileContents=EnumFiles.filter(fileContents,whitePaths);
+        System.out.println(fileContents.size());
+
     }
 }

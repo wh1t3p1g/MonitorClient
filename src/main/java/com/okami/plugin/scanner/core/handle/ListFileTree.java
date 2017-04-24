@@ -1,4 +1,4 @@
-package com.okami.plugin.scanner.core.common;
+package com.okami.plugin.scanner.core.handle;
 
 import java.io.IOException;
 import java.nio.file.FileVisitResult;

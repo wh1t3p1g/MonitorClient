@@ -1,8 +1,18 @@
 package com.okami;
+import com.okami.bean.ConfigBean;
+import com.okami.common.PathTree;
 import com.okami.core.ControlCenter;
 import com.okami.core.IOC;
+import com.okami.plugin.ScannerApplication;
+import com.okami.util.DataUtil;
+import com.okami.util.FileUtil;
 import com.okami.util.IniUtil;
+
+
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.boot.SpringApplication;
@@ -19,15 +29,16 @@ public class MonitorClientApplication extends SpringBootServletInitializer imple
 
 	public static ApplicationContext  ctx;
 
-	public static Log log= LogFactory.getLog(MonitorClientApplication.class);
+	public static Log log ;
 	
 	public static void main(String[] args) {	
 		IOC.ctx  = SpringApplication.run(MonitorClientApplication.class, args); 
-		ctx =  IOC.ctx;
+		ctx =  IOC.ctx; 
+		log = IOC.log; 
 		
 		ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
 		controlCenter.init();
-//        controlCenter.audoLoad();
+        controlCenter.audoLoad();
 	}
 
 	@Override

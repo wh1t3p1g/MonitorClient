@@ -1,8 +1,9 @@
-package com.okami.plugin.scanner.core.handler.scanner.statistics;
+package com.okami.plugin.scanner.core.handle;
 
 import com.okami.MonitorClientApplication;
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.util.FileUtil;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,7 @@ import java.util.*;
  */
 @Component
 @Scope("prototype")
-public class LanguageIC extends NeoPi {
+public class LanguageIC extends NeoPi{
 
     private boolean flag=false;
 

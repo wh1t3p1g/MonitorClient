@@ -31,20 +31,16 @@ public class HttpHandler {
 
     private ConfigBean configBean;
 
-    private String RHost;
-
     public HttpHandler(){
     	headers = new HashMap<String, String>();
     	headers.put("Charsert", "UTF-8");
     	headers.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:48.0) Gecko/20100101 Firefox/48.0");
     	headers.put("Accept", "*/*");
     	headers.put("Accept-Encoding", "gzip, deflate");
-
     }
     
     public void init(){
     	configBean = IOC.instance().getClassobj(ConfigBean.class);
-		RHost="http://"+configBean.getRhost()+":"+configBean.getRport();
     }
     
     /**
@@ -55,7 +51,7 @@ public class HttpHandler {
      */
     public String sendMessage(String postParameters){
 		headers.put("Content-Type", "application/x-www-form-urlencoded");
-		HttpResponse httpResponse = WebUtil.httpPost(RHost+"/Monitor/public/api/messages/add/"+configBean.getLhost(),headers,postParameters);
+		HttpResponse httpResponse = WebUtil.httpPost("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/api/messages/add/"+configBean.getLhost(),headers,postParameters);
 		String result = WebUtil.getResponseBody(httpResponse);
 		return result;
     }
@@ -71,9 +67,7 @@ public class HttpHandler {
     public String sendMonitorEvent(String time,String type,String content){
 		headers.put("Content-Type", "application/x-www-form-urlencoded");
 		String mgPostParameters = "type=" + type + "&time=" +time+"&content=" + content;
-		HttpResponse httpResponse = WebUtil.httpPost(
-				RHost+"/Monitor/public/api/messages/add/"+configBean.getLhost(),
-				headers,mgPostParameters);
+		HttpResponse httpResponse = WebUtil.httpPost("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/api/messages/add/"+configBean.getLhost(),headers,mgPostParameters);
 		String result = WebUtil.getResponseBody(httpResponse);
 		return result;
     }
@@ -86,14 +80,8 @@ public class HttpHandler {
 	 */
 	public String sendHB(){
 		headers.put("Content-Type", "application/x-www-form-urlencoded");
-		String hbPostParameters =
-				"ip="+configBean.getLhost()+
-				"&port="+configBean.getLport()+
-				"&delay="+String.valueOf(configBean.getDelay()/60)+
-				"&storage_path=" + configBean.getStoragePath();
-		HttpResponse httpResponse =
-					WebUtil.httpPost(RHost+"/Monitor/public/api/heartbeat",
-											headers,hbPostParameters);
+		String hbPostParameters = "ip="+configBean.getLhost()+"&port="+configBean.getLport()+"&delay="+String.valueOf(configBean.getDelay()/60)+"&storage_path=" + configBean.getStoragePath();
+		HttpResponse httpResponse = WebUtil.httpPost("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/api/heartbeat",headers,hbPostParameters);
 		String result = WebUtil.getResponseBody(httpResponse);
 		return result;
 	}
@@ -106,10 +94,7 @@ public class HttpHandler {
 	 */
 	public String upload(File file){
 		headers.remove("Content-Type");
-		HttpResponse httpResponse =
-				WebUtil.uploadFile(
-						RHost+"/Monitor/public/upload/up",
-						headers,file.getAbsoluteFile().toString());
+		HttpResponse httpResponse = WebUtil.uploadFile("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/upload/up",headers,file.getAbsoluteFile().toString());
 		String result = WebUtil.getResponseBody(httpResponse);
 		return result;
 	}
@@ -126,7 +111,7 @@ public class HttpHandler {
 		byte[] result = null;
 		int i=3;
 		while(i>0&&result==null){
-			HttpResponse httpResponse = WebUtil.httpGet(RHost+"/Monitor/public/download/"+filename,headers);
+			HttpResponse httpResponse = WebUtil.httpGet("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/download/"+filename,headers);
 			result = WebUtil.getResponseBodyBytes(httpResponse);
 			i--;
 		}

@@ -1,5 +1,6 @@
-package com.okami.plugin.scanner.core.handler.scanner.statistics;
+package com.okami.plugin.scanner.core.handle;
 
+import com.okami.MonitorClientApplication;
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.util.FileUtil;
 import org.springframework.context.annotation.Scope;
@@ -14,7 +15,7 @@ import java.util.Map;
  */
 @Component
 @Scope("prototype")
-public class LongestWord extends NeoPi {
+public class LongestWord extends NeoPi{
 
     @Override
     public void calculate() {
