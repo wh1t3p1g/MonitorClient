@@ -11,7 +11,7 @@ import java.io.*;
  * @author orleven
  * @date 2016年12月31日
  */
-public class ZLibUtils {
+public class ZLibUtil {
   
     /** 
      * 压缩 
@@ -44,7 +44,8 @@ public class ZLibUtils {
                 e.printStackTrace();  
             }  
         }  
-        compresser.end();  
+        compresser.end(); 
+
         return output;  
     }  
   
@@ -61,7 +62,8 @@ public class ZLibUtils {
   
             dos.finish();  
   
-            dos.flush();  
+            dos.flush(); 
+            dos.close();
         } catch (IOException e) {  
             e.printStackTrace();  
         }  
@@ -110,6 +112,7 @@ public class ZLibUtils {
     public static byte[] decompress(InputStream is) {  
         InflaterInputStream iis = new InflaterInputStream(is);  
         ByteArrayOutputStream o = new ByteArrayOutputStream(1024);  
+        byte[] result = null;
         try {  
             int i = 1024;  
             byte[] buf = new byte[i];  
@@ -117,10 +120,22 @@ public class ZLibUtils {
             while ((i = iis.read(buf, 0, i)) > 0) {  
                 o.write(buf, 0, i);  
             }  
-  
+            result = o.toByteArray();
+            o.close();
+            iis.close();
         } catch (IOException e) {  
             e.printStackTrace();  
         }  
-        return o.toByteArray();  
-    }
-}  
+        return   result;
+    }  
+    
+    public static void main(String args[]){
+
+        byte[] data = FileUtil.readByte("C:\\Users\\dell\\Desktop\\accounts.db");
+        byte[] output = ZLibUtil.decompress(data);
+        System.err.println("解压缩后字节长度:\t" + output.length);  
+        String outputStr = new String(output);  
+        System.err.println("输出字符串:\t" + outputStr);  
+  
+    }  
+}

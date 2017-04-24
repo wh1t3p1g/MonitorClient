@@ -70,6 +70,14 @@ public class MonitorTask {
      */
     @Column(name = "Remark") 
 	private String remark;
+    
+    /**
+     * 最大文件大小，超过就不上传
+     */
+    @Column(name = "MaxSize") 
+	private String maxSize;
+    
+    private int status;
 	
 	public void setTaskId(Integer taskId){
 		this.taskId = taskId;
@@ -79,6 +87,13 @@ public class MonitorTask {
 		return taskId;
 	}
 	
+	public void setStatus(Integer status){
+		this.status = status;
+	}
+	
+	public Integer getStatus(){
+		return status;
+	}
 	
 	public void setTaskName(String taskName){
 		this.taskName = taskName;
@@ -86,6 +101,14 @@ public class MonitorTask {
 	
 	public String getTaskName(){
 		return taskName;
+	}
+	
+	public void setMaxSize(String maxSize){
+		this.maxSize = maxSize;
+	}
+	
+	public String getMaxSize(){
+		return maxSize;
 	}
 	
 	public void setProjectName(String projectName){
@@ -166,7 +189,7 @@ public class MonitorTask {
 	}
 	
 	
-	public MonitorTask(Integer taskId,String taskName,String projectName,String monitorPath,String whiteList,String blackList,String flagName,int runMode,int BCMode,String remark){
+	public MonitorTask(Integer taskId,String taskName,String projectName,String monitorPath,String whiteList,String blackList,String flagName,int runMode,int BCMode,String remark,String maxSize){
 		this.taskId = taskId;
 		this.taskName = taskName;
 		this.projectName = projectName;
@@ -177,6 +200,8 @@ public class MonitorTask {
 		this.runMode = runMode;
 		this.BCMode = BCMode;
 		this.remark = remark;
+		this.maxSize = maxSize;
+		this.status = 0;
 	}
 	
 	public MonitorTask(String taskName){

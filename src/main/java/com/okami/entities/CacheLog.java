@@ -63,5 +63,9 @@ public class CacheLog {
 		this.time = time;
 		this.event = event;
 	}
+	
+	public CacheLog(){
+
+	}
     
 }

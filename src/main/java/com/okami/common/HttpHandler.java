@@ -10,7 +10,13 @@ import org.apache.http.util.EntityUtils;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.okami.bean.ConfigBean;
+import com.okami.core.IOC;
+import com.okami.util.WebUtil;
+
+import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -19,94 +25,99 @@ import java.util.Map;
  * @since 2017/1/15
  */
 @Component
-@Scope("prototype")
 public class HttpHandler {
 
     private Map<String,String> headers;
 
-    private HttpClient httpClient;
-
-    private HttpGet httpGet;
-
-    private HttpPost httpPost;
-
-    private int timeout;
+    private ConfigBean configBean;
 
     public HttpHandler(){
-//        RequestConfig config = RequestConfig.custom()
-//                                    .setConnectTimeout(timeout * 1000)
-//                                    .setConnectionRequestTimeout(timeout * 1000)
-//                                    .setSocketTimeout(timeout * 1000).build();
-//        this.httpClient = HttpClientBuilder.create().setDefaultRequestConfig(config).build();
-
-        this.httpClient = HttpClientBuilder.create().build();
-
+    	headers = new HashMap<String, String>();
+    	headers.put("Charsert", "UTF-8");
+    	headers.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:48.0) Gecko/20100101 Firefox/48.0");
+    	headers.put("Accept", "*/*");
+    	headers.put("Accept-Encoding", "gzip, deflate");
     }
-
+    
+    public void init(){
+    	configBean = IOC.instance().getClassobj(ConfigBean.class);
+    }
+    
     /**
-     * get
-     * @param url
+     * 发送消息
+     * @data 2017年4月23日
+     * @param postParameters
      * @return
      */
-    public HttpResponse Get(String url){
-        httpGet=new HttpGet(url);
-        addHeaders("get");
-        try {
-            HttpResponse httpResponse= this.httpClient.execute(httpGet);
-            return httpResponse;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public String sendMessage(String postParameters){
+		headers.put("Content-Type", "application/x-www-form-urlencoded");
+		HttpResponse httpResponse = WebUtil.httpPost("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/api/messages/add/"+configBean.getLhost(),headers,postParameters);
+		String result = WebUtil.getResponseBody(httpResponse);
+		return result;
     }
-
+    
     /**
-     * post data
-     * @param url
-     * @param data
+     * 发送监控消息
+     * @data 2017年4月23日
+     * @param time
+     * @param type
+     * @param content
      * @return
      */
-    public HttpResponse Post(String url,String data){
-        httpPost=new HttpPost(url);
-        addHeaders("post");
-        httpPost.setEntity(new StringEntity(data, "utf-8"));
-        try {
-            HttpResponse httpResponse=this.httpClient.execute(httpPost);
-            return httpResponse;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
+    public String sendMonitorEvent(String time,String type,String content){
+		headers.put("Content-Type", "application/x-www-form-urlencoded");
+		String mgPostParameters = "type=" + type + "&time=" +time+"&content=" + content;
+		HttpResponse httpResponse = WebUtil.httpPost("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/api/messages/add/"+configBean.getLhost(),headers,mgPostParameters);
+		String result = WebUtil.getResponseBody(httpResponse);
+		return result;
     }
+    
 
-    /**
-     * get response content
-     * @param httpResponse
-     * @return
-     */
-    public String parserResponse(HttpResponse httpResponse){
-        if(httpResponse==null)
-            return null;
-        try {
-            String content= EntityUtils.toString(httpResponse.getEntity());
-            return content;
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return null;
-    }
+	/**
+	 * 发送心跳
+	 * @data 2017年4月19日
+	 * @return
+	 */
+	public String sendHB(){
+		headers.put("Content-Type", "application/x-www-form-urlencoded");
+		String hbPostParameters = "ip="+configBean.getLhost()+"&port="+configBean.getLport()+"&delay="+String.valueOf(configBean.getDelay()/60)+"&storage_path=" + configBean.getStoragePath();
+		HttpResponse httpResponse = WebUtil.httpPost("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/api/heartbeat",headers,hbPostParameters);
+		String result = WebUtil.getResponseBody(httpResponse);
+		return result;
+	}
 
-    private void addHeaders(String method){
-        if(method.equals("get")) {
-            for (String key : headers.keySet()) {
-                httpGet.addHeader(key, headers.get(key));
-            }
-        }else{
-            for (String key : headers.keySet()) {
-                httpPost.addHeader(key, headers.get(key));
-            }
-        }
-    }
+	/**
+	 * 上传文件
+	 * @data 2017年4月23日
+	 * @param file
+	 * @return
+	 */
+	public String upload(File file){
+		headers.remove("Content-Type");
+		HttpResponse httpResponse = WebUtil.uploadFile("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/upload/up",headers,file.getAbsoluteFile().toString());
+		String result = WebUtil.getResponseBody(httpResponse);
+		return result;
+	}
+	
+	/**
+	 * 下载文件
+	 * @data 2017年4月24日
+	 * @param filename
+	 * @param ouFile
+	 * @return
+	 */
+	public byte[] download(String filename){
+		headers.put("Content-Type", "application/x-www-form-urlencoded");
+		byte[] result = null;
+		int i=3;
+		while(i>0&&result==null){
+			HttpResponse httpResponse = WebUtil.httpGet("http://"+configBean.getRhost()+":"+configBean.getRport()+"/Monitor/public/download/"+filename,headers);
+			result = WebUtil.getResponseBodyBytes(httpResponse);
+			i--;
+		}
+
+		return result;
+	}
 
     public Map<String, String> getHeaders() {
         return headers;
@@ -116,35 +127,4 @@ public class HttpHandler {
         this.headers = headers;
     }
 
-    public HttpClient getHttpClient() {
-        return httpClient;
-    }
-
-    public void setHttpClient(HttpClient httpClient) {
-        this.httpClient = httpClient;
-    }
-
-    public HttpGet getHttpGet() {
-        return httpGet;
-    }
-
-    public void setHttpGet(HttpGet httpGet) {
-        this.httpGet = httpGet;
-    }
-
-    public HttpPost getHttpPost() {
-        return httpPost;
-    }
-
-    public void setHttpPost(HttpPost httpPost) {
-        this.httpPost = httpPost;
-    }
-
-    public int getTimeout() {
-        return timeout;
-    }
-
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
-    }
 }

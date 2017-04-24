@@ -2,7 +2,7 @@ package com.okami.plugin.scanner.core.handler.scanner.statistics;
 
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.util.FileUtil;
-import com.okami.util.ZLibUtils;
+import com.okami.util.ZLibUtil;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
@@ -22,7 +22,7 @@ public class Compression extends NeoPi {
         for(FileContent fileContent:fileContents){
             if(!fileContent.getFileExt().equals(getFileExt()))continue;
             byte[] uncompressData= FileUtil.readByte(fileContent.getFilePath());
-            byte[] compressedData= ZLibUtils.compress(uncompressData);
+            byte[] compressedData= ZLibUtil.compress(uncompressData);
             double uncompressLenth=uncompressData.length;
             double compressedLenth=compressedData.length;
             double ratio = compressedLenth/uncompressLenth;
