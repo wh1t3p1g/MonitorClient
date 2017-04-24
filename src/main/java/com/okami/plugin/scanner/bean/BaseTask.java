@@ -3,6 +3,10 @@ package com.okami.plugin.scanner.bean;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author wh1t3P1g
  * @since  2017/1/1
@@ -11,40 +15,78 @@ import org.springframework.stereotype.Component;
 @Component
 @Scope("prototype")
 public class BaseTask {
-
     /**
      * 任务名
      */
     private String taskName;
     /**
-     * 标识task，唯一id值
+     * 任务唯一标示
      */
     private String taskId;
     /**
-     * 扫描路径
+     * 扫描类型
+     * 1 fuzzyhash scan
+     * 2 static scan
+     * 3 statistic scan
+     * 4 full scan
      */
-    private String scanPath;
+    private int type;
     /**
-     * 白名单地址  用来扫描图片木马
+     * 扫描模式
+     * 1 fast mode
+     * 2 full mode
      */
-    private String[] whitePaths;
+    private int mode;
     /**
-     * 扫描等级
-     * 1=>基于静态特征扫描（不该出现的地方出现） 依赖特征库
-     * 2=>基于文件相似性扫描 依赖特征库
-     * 3=>基于统计分析
-     * 4=>基于日志分析
-     * 格式:各等级之间用等号分割,如1,2,3
+     * type 为1时使用
+     * 待检查的脚本后缀
+     * 格式: php,jsp
      */
-    private String scanLevel;
+    private String scriptExtension;
     /**
-     * 任务创建时间
+     * 待扫描路径
      */
-    private String createTime;
+    private String filePath;
     /**
-     * 任务结束时间
+     * 被排除的文件路径
+     * 格式: c:\,c:\test
      */
-    private String finishTime;
+    private String exceptPath;
+    /**
+     * 被排除的文件后缀
+     * 格式：jpg,css,js
+     */
+    private String exceptExtension;
+    /**
+     * 是否需要将排除项过滤
+     */
+    private boolean filter;
+
+    /**
+     *  扫描结果集合
+     *  基于静态特征扫描=><存在木马的文件路径,具体的恶意代码>
+     */
+    private Map<String,String> staticScanResults;
+    /**
+     *  扫描结果集合
+     *  基于文件相似性扫描=><存在木马的文件路径,对应特征库中的文件名：ssdeep值：相似度>
+     */
+    private Map<String,String> fuzzHashScanResults;
+    /**
+     * 扫描结果集合
+     * 基于统计分析=><算法名,top10(filename:value)>
+     */
+    private Map<String,String> statisticsScanResults;
+
+    private List<FileContent> fileContents;
+
+    public String getTaskName() {
+        return taskName;
+    }
+
+    public void setTaskName(String taskName) {
+        this.taskName = taskName;
+    }
 
     public String getTaskId() {
         return taskId;
@@ -54,51 +96,91 @@ public class BaseTask {
         this.taskId = taskId;
     }
 
-    public String getScanPath() {
-        return scanPath;
+    public int getType() {
+        return type;
     }
 
-    public void setScanPath(String scanPath) {
-        this.scanPath = scanPath;
+    public void setType(int type) {
+        this.type = type;
     }
 
-    public String[] getWhitePaths() {
-        return whitePaths;
+    public String getScriptExtension() {
+        return scriptExtension;
     }
 
-    public void setWhitePaths(String[] whitePaths) {
-        this.whitePaths = whitePaths;
+    public void setScriptExtension(String scriptExtension) {
+        this.scriptExtension = scriptExtension;
     }
 
-    public String getScanLevel() {
-        return scanLevel;
+    public String getFilePath() {
+        return filePath;
     }
 
-    public void setScanLevel(String scanLevel) {
-        this.scanLevel = scanLevel;
+    public void setFilePath(String filePath) {
+        this.filePath = filePath;
     }
 
-    public String getCreateTime() {
-        return createTime;
+    public String getExceptPath() {
+        return exceptPath;
     }
 
-    public void setCreateTime(String createTime) {
-        this.createTime = createTime;
+    public void setExceptPath(String exceptPath) {
+        this.exceptPath = exceptPath;
     }
 
-    public String getFinishTime() {
-        return finishTime;
+    public String getExceptExtension() {
+        return exceptExtension;
     }
 
-    public void setFinishTime(String finishTime) {
-        this.finishTime = finishTime;
+    public void setExceptExtension(String exceptExtension) {
+        this.exceptExtension = exceptExtension;
     }
 
-    public String getTaskName() {
-        return taskName;
+    public List<FileContent> getFileContents() {
+        return fileContents;
     }
 
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
+    public void setFileContents(List<FileContent> fileContents) {
+        this.fileContents = fileContents;
+    }
+
+    public boolean isFilter() {
+        return filter;
+    }
+
+    public void setFilter(boolean filter) {
+        this.filter = filter;
+    }
+
+    public Map<String, String> getStaticScanResults() {
+        return staticScanResults;
+    }
+
+    public void setStaticScanResults(Map<String, String> staticScanResults) {
+        this.staticScanResults = staticScanResults;
+    }
+
+    public Map<String, String> getFuzzHashScanResults() {
+        return fuzzHashScanResults;
+    }
+
+    public void setFuzzHashScanResults(Map<String, String> fuzzHashScanResults) {
+        this.fuzzHashScanResults = fuzzHashScanResults;
+    }
+
+    public Map<String, String> getStatisticsScanResults() {
+        return statisticsScanResults;
+    }
+
+    public void setStatisticsScanResults(Map<String, String> statisticsScanResults) {
+        this.statisticsScanResults = statisticsScanResults;
+    }
+
+    public int getMode() {
+        return mode;
+    }
+
+    public void setMode(int mode) {
+        this.mode = mode;
     }
 }

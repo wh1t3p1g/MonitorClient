@@ -66,6 +66,8 @@ public class FileContent {
      */
     private long size;
 
+    private String dirname;
+
     private Path path;
 
     public Path getPath() {
@@ -178,6 +180,14 @@ public class FileContent {
 
     public void setOwner(String owner) {
         this.owner = owner;
+    }
+
+    public String getDirname() {
+        return dirname;
+    }
+
+    public void setDirname(String dirname) {
+        this.dirname = dirname;
     }
 
     public void print(){
