@@ -10,3 +10,8 @@ buildNumber.properties
 .setting/
 .idea/
 test/
+MonitorClient.iml
+MonitorClient.eml
+MonitorClient.userlibraries
+.classpath
+.project
