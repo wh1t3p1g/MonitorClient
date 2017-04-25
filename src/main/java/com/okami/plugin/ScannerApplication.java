@@ -74,8 +74,13 @@ public class ScannerApplication implements Runnable{
     public void start () {
         if (t == null) {
             t = new Thread (this);
+            globalBean.setT(t);
             t.start ();
         }
+    }
+
+    public void stop(){
+        System.out.println(globalBean.getT().isAlive());
     }
 
     public Boolean isRunning(){

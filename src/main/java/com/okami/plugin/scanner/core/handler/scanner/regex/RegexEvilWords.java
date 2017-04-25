@@ -26,7 +26,6 @@ public class RegexEvilWords {
 
     private Map<String,String> features;
 
-
     public RegexEvilWords(){
         WebshellFeatures webshellFeatures=
                 MonitorClientApplication.ctx.getBean(WebshellFeatures.class);

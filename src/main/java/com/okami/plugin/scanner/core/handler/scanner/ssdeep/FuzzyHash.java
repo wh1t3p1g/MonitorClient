@@ -1,6 +1,7 @@
 package com.okami.plugin.scanner.core.handler.scanner.ssdeep;
 
 import com.okami.MonitorClientApplication;
+import com.okami.controller.WebshellController;
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.plugin.scanner.bean.WebshellFeatures;
 import com.okami.util.FileUtil;
@@ -31,13 +32,16 @@ public class FuzzyHash {
      */
     private Map<String,String> features;
 
-    public FuzzyHash(){
-        WebshellFeatures webshellFeatures=
-                MonitorClientApplication.ctx.getBean(WebshellFeatures.class);
+    private WebshellFeatures webshellFeatures;
 
+    public FuzzyHash(){
+        webshellFeatures=MonitorClientApplication.ctx.getBean(WebshellFeatures.class);
         this.spamSum=new SpamSum();
-        if(webshellFeatures!=null)
+        if(webshellFeatures!=null){
             this.features=webshellFeatures.load("FuzzHash");
+            MonitorClientApplication.log.info("WebshellFeature<FuzzHash> load success");
+
+        }
         else
             MonitorClientApplication.log.error("WebshellFeature<FuzzHash> load error");
     }

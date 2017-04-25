@@ -4,12 +4,12 @@
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>com.okami</groupId>
-	<artifactId>monitor_client</artifactId>
+	<artifactId>MonitorClient</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>monitor_client</name>
-	<description>Demo project for Spring Boot</description>
+	<name>MonitorClient</name>
+	<description>MonitorClient</description>
 
 
 	<parent>
@@ -92,6 +92,13 @@
 		<dependency>
 			<groupId>net.sourceforge.htmlunit</groupId>
 			<artifactId>htmlunit</artifactId>
+		</dependency>
+
+		<!-- https://mvnrepository.com/artifact/nz.ac.waikato.cms.weka/weka-stable -->
+		<dependency>
+			<groupId>nz.ac.waikato.cms.weka</groupId>
+			<artifactId>weka-stable</artifactId>
+			<version>3.8.0</version>
 		</dependency>
 	</dependencies>
 
