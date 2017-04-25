@@ -32,4 +32,15 @@ public class Compression extends NeoPi {
             results.add(temp);
         }
     }
+
+    @Override
+    public double calculate(FileContent fileContent) {
+        byte[] uncompressData= FileUtil.readByte(fileContent.getFilePath());
+        byte[] compressedData= ZLibUtil.compress(uncompressData);
+        double uncompressLenth=uncompressData.length;
+        double compressedLenth=compressedData.length;
+        return compressedLenth/uncompressLenth;
+    }
+
+
 }

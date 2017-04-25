@@ -45,5 +45,25 @@ public class Entropy extends NeoPi {
         }
     }
 
+    @Override
+    public double calculate(FileContent fileContent) {
+        double entropy=0;
+        String data=null;
+        String striped_data=null;
+        byte[] content=FileUtil.readByte(fileContent.getFilePath());
+        data= new String(content);
+        striped_data=data.replace(" ","");
+        int size=striped_data.length();
+        int[] temp=charCount(striped_data);
+        for(int i:temp){
+            if(i==0)continue;
+            double p_i=(i*1.00)/size;
+            if(p_i>0){
+                entropy+=-p_i*(Math.log(p_i)/Math.log(2));
+            }
+        }
+        return entropy;
+    }
+
 
 }

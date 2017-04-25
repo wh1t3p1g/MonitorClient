@@ -17,6 +17,8 @@ public abstract class NeoPi {
 
     abstract public void calculate();
 
+    abstract public double calculate(FileContent fileContent);
+
     public int[] charCount(String data){
         int[] charCount=new int[256];
         int t;
