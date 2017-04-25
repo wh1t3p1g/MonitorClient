@@ -38,27 +38,38 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 
 	@Override
 	public List<MonitorTask> queryTask() throws Exception {
-		Connection conn = dataSource.getConnection();
-		String sql = "Select * from MonitorTask";
-	    Statement smt = conn.createStatement();
-
-	    ResultSet rs = smt.executeQuery(sql);
-	    List<MonitorTask> list = new ArrayList<MonitorTask>();
-	    while (rs.next()) {
-	    	Integer taskId = rs.getInt("TaskId");
-	    	String taskName = rs.getString("TaskName");
-	    	String projectName = rs.getString("ProjectName");
-	    	String monitorPath = rs.getString("MonitorPath");
-	    	String whiteList = rs.getString("WhiteList");
-	    	String blackList = rs.getString("BlackList");
-	    	String flagName = rs.getString("FlagName");
-	    	int runMode = rs.getInt("RunMode");
-	    	int BCMode = rs.getInt("BCMode");
-	    	String remark = rs.getString("Remark");
-	    	String maxSize = rs.getString("MaxSize");
-	    	MonitorTask task = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize);
-	    	list.add(task);
-	    }
+		Connection conn = null;
+		List<MonitorTask> list = new ArrayList<MonitorTask>();
+		try {
+			conn = dataSource.getConnection();
+			String sql = "Select * from MonitorTask";
+		    Statement smt = conn.createStatement();
+	
+		    ResultSet rs = smt.executeQuery(sql);
+		    while (rs.next()) {
+		    	Integer taskId = rs.getInt("TaskId");
+		    	String taskName = rs.getString("TaskName");
+		    	String projectName = rs.getString("ProjectName");
+		    	String monitorPath = rs.getString("MonitorPath");
+		    	String whiteList = rs.getString("WhiteList");
+		    	String blackList = rs.getString("BlackList");
+		    	String flagName = rs.getString("FlagName");
+		    	int runMode = rs.getInt("RunMode");
+		    	int BCMode = rs.getInt("BCMode");
+		    	String remark = rs.getString("Remark");
+		    	String maxSize = rs.getString("MaxSize");
+		    	MonitorTask task = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize);
+		    	list.add(task);
+		    }
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		} finally {
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {}
+			}
+		}
 	    return list;
 	}
 
@@ -136,31 +147,106 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 
 	@Override
 	public MonitorTask queryTaskByTaskName(String taskname) throws Exception {
-		Connection conn = dataSource.getConnection();
-		String sql = "Select * from MonitorTask where TaskName = ?";
-		PreparedStatement ps = conn.prepareStatement(sql);
-		ps.setString(1, taskname);
-	    MonitorTask monitorTask = null ;
-		ResultSet rs = ps.executeQuery();
-		if (rs.next()) {
-	    	Integer taskId = rs.getInt("TaskId");
-	    	String taskName = rs.getString("TaskName");
-	    	String projectName = rs.getString("ProjectName");
-	    	String monitorPath = rs.getString("MonitorPath");
-	    	String whiteList = rs.getString("WhiteList");
-	    	String blackList = rs.getString("BlackList");
-	    	String flagName = rs.getString("FlagName");
-	    	int runMode = rs.getInt("RunMode");
-	    	int BCMode = rs.getInt("BCMode");
-	    	String remark = rs.getString("Remark");
-	    	String maxSize = rs.getString("MaxSize");
-	    	monitorTask = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize);
+		Connection conn = null;
+		MonitorTask monitorTask = null ;
+		try {
+			conn = dataSource.getConnection();
+			String sql = "Select * from MonitorTask where TaskName = ?";
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setString(1, taskname);
+		    
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+		    	Integer taskId = rs.getInt("TaskId");
+		    	String taskName = rs.getString("TaskName");
+		    	String projectName = rs.getString("ProjectName");
+		    	String monitorPath = rs.getString("MonitorPath");
+		    	String whiteList = rs.getString("WhiteList");
+		    	String blackList = rs.getString("BlackList");
+		    	String flagName = rs.getString("FlagName");
+		    	int runMode = rs.getInt("RunMode");
+		    	int BCMode = rs.getInt("BCMode");
+		    	String remark = rs.getString("Remark");
+		    	String maxSize = rs.getString("MaxSize");
+		    	monitorTask = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize);
+			}
+			rs.close();
+			ps.close();
+		}catch (SQLException e) {
+			throw new RuntimeException(e);
+		} finally {
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {}
+			}
 		}
-		rs.close();
-		ps.close();
 		return monitorTask;
 	}
 	
+	@Override
+	public boolean createTable() throws Exception {
+		Connection conn = null;
+		try {
+			String sql = "CREATE TABLE 'MonitorTask' ("
+					+ "'TaskId'  INTEGER NOT NULL,"
+					+ "'TaskName'  TEXT NOT NULL,"
+					+ "'ProjectName'  TEXT,"
+					+ "'MonitorPath'  TEXT,"
+					+ "'WhiteList'  TEXT,"
+					+ "'BlackList'  TEXT,"
+					+ "'FlagName'  TEXT,"
+					+ "'RunMode'  INTEGER,"
+					+ "'BCMode'  INTEGER,"
+					+ "'Remark'  TEXT,"
+					+ "'MaxSize'  TEXT,"
+					+ "PRIMARY KEY ('TaskId' ASC)"
+					+ ")";
+					
+			conn = dataSource.getConnection();
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.executeUpdate();
+			ps.close();
+		}catch (SQLException e) {
+			throw new RuntimeException(e);
+		} finally {
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {}
+			}
+		}
+		
+		return true;
+	}
 
+
+	@Override
+	public boolean isTableExist() throws Exception {
+		Connection conn = null;
+		boolean flag = false;
+		try {
+			String sql = "select * from sqlite_master where type = 'table' and name = 'MonitorTask'";
+		
+			conn = dataSource.getConnection();
+			PreparedStatement ps = conn.prepareStatement(sql);
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				flag = true;
+			}
+			rs.close();
+			ps.close();
+		}catch (SQLException e) {
+			throw new RuntimeException(e);
+		} finally {
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {}
+			}
+		}
+		return flag;
+	}
 
 }

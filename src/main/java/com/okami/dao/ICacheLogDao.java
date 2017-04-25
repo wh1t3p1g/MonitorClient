@@ -30,4 +30,20 @@ public interface ICacheLogDao {
 	  * @throws Exception
 	  */
 	 public boolean deleteCacheLog(CacheLog cacheLog) throws Exception ;
+	 
+	 /**
+	  * 创建表
+	  * @data 2017年4月25日
+	  * @return
+	  * @throws Exception
+	  */
+	 public boolean createTable() throws Exception;
+	 
+	 /**
+	  * 创建表
+	  * @data 2017年4月25日
+	  * @return
+	  * @throws Exception
+	  */
+	 public boolean isTableExist() throws Exception;
 }

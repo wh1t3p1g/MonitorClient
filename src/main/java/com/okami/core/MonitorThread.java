@@ -96,13 +96,16 @@ public class MonitorThread {
             // 防篡改模式（安全模式）
             if(monitorTask.getRunMode()==2){ 
                 qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tStart Monitor(Safe Mode): " + monitorTask.getMonitorPath());
-                qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Temp Mode : " + monitorTask.getMonitorPath());
+            	IOC.log.info("Start Monitor(Safe Mode): " + monitorTask.getMonitorPath());
+                qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Temp Mode: " + monitorTask.getMonitorPath());
+                IOC.log.info("Turn To Temp Mode: " + monitorTask.getMonitorPath());
                 this.listener.setMode("Temp");
             }
             // 人工模式
             else if(monitorTask.getRunMode()==1){
                 this.listener.setMode("Human");
                 qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tStart Monitor(Human Mode): " + monitorTask.getMonitorPath());
+                IOC.log.info("Start Monitor(Human Mode): " + monitorTask.getMonitorPath());
             }
             
             watchID = JNotify.addWatch(monitorTask.getMonitorPath(), mask, watchSubtree, this.listener);  
@@ -219,6 +222,7 @@ public class MonitorThread {
             switch(mode){
             case "Human":
                 qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+                IOC.log.info(action+": "+filename);
                 break;
             case "Safe":
                 checkNameList(time,action,filename);
@@ -227,10 +231,12 @@ public class MonitorThread {
                 if(qMonitor.isEmpty()){
                     // 备份时发生文件操作，停止备份、监控、还原线程
                     if(monitorTask.getBCMode()==0){
+                        IOC.log.info(action+": "+filename);
                         qHeartBeats.offer(time+"\t"+action+"\t"+filename);
                         monitorTask.setRunMode(0);
                         stop();
-                        qHeartBeats.offer(time+"\tInfo\tDon't operate files when backing up ! Stop Monitor "+monitorTask.getMonitorPath()+ " !");
+                    	IOC.log.info("Don't operate files when backing up ! Stop Monitor: " + monitorTask.getMonitorPath());
+                        qHeartBeats.offer(time+"\tInfo\tDon't operate files when backing up ! Stop Monitor: "+monitorTask.getMonitorPath());
                     }
                     
                     // 自检
@@ -283,6 +289,7 @@ public class MonitorThread {
                             // 不在黑名单，即白名单里面
                             if(!blackFlag||whiteFlag){
                                 qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+                                IOC.log.info(action + ": " + filename);
                             }
                             break;
                         }
@@ -318,8 +325,10 @@ public class MonitorThread {
                 	// 如果flag文件中没有该文件，则进行删除
                 	if(fileIndex==null){
 	                    qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+	                    IOC.log.info(action + ": " + filename);
 						FileUtil.deleteAll(new File(filename));
-						qHeartBeats.offer(DataUtil.getTime()+"\t"+action+"\t"+filename+" deal success !");
+						qHeartBeats.offer(DataUtil.getTime()+"\t"+action+"\t"+filename+" Deal Success!");
+						IOC.log.info(action + ": " + filename+" Deal Success!");
 	                }
                 	
 	                // flag文件中存在，则进行md5校验
@@ -331,8 +340,9 @@ public class MonitorThread {
 	                		String sha12 = fileIndex.getSha1();
 	                		if(!sha12.equals( sha11)){
 	                			qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+	                			IOC.log.info(action + ": " + filename);
 	                			FileUtil.deleteAll(new File(filename));
-						        qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
+	                			qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
 							}
 		                }
 	                }
@@ -343,6 +353,7 @@ public class MonitorThread {
 	            	// 如果flag文件中有该文件，则进行还原
 		            if(fileIndex!=null){
 		            	qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+		            	IOC.log.info(action + ": " + filename);
 		                qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
 		            }
 	            }
@@ -355,6 +366,7 @@ public class MonitorThread {
 	                		String sha12 = fileIndex.getSha1();
 	                		if(!sha12.equals( sha11)){
 	                			qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+	                			IOC.log.info(action + ": " + filename);
 	                			FileUtil.deleteAll(new File(filename));
 						        qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
 							}

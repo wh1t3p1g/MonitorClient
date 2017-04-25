@@ -48,19 +48,6 @@ public class ControlCenter {
 		  
         // 加载配置文件
         configBean = IniUtil.getConfig(configBean,System.getProperty("user.dir") + File.separator + "config/config.ini");
-//        if(configBean == null){
-//        	configBean = IOC.instance().getClassobj(ConfigBean.class);
-//            configBean.setStoragePath("C:\\Users\\dell\\Desktop\\存储地址");
-//            configBean.setLhost("127.0.0.1");
-//            configBean.setRhost("192.168.199.183");
-//            configBean.setLport("5002");
-//            configBean.setRport("80");
-//            configBean.setDelay(60);
-//            configBean.setRemoteMode(true);
-//        	IniUtil.setConfig(configBean,System.getProperty("user.dir") + File.separator + "config/config.ini");
-//        	
-//        	// 退出程序，并要求使用者设置配置文件
-//        }
        
         // 初始化路径
         initPath();
@@ -109,36 +96,10 @@ public class ControlCenter {
 		if (!file.exists()) {
 			file.mkdir();
 		}
-//		file = new File(configBean.getCheckPath());
-//		if (!file.exists()) {
-//			file.mkdir();
-//		}
+
 		return true;
 	}
 	
-//	/**
-//	 * 遍历路径并且存入数据库,备份前操作
-//	 * @data 2017年4月3日
-//	 * @return
-//	 */
-//	public boolean TraversalPath(MonitorTask monitorTask){
-//		// 获取配置
-//		ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
-//		
-//		// 创建文件数，存入数据库
-//		try {
-//			FileIndexDao fileIndexDao = new FileIndexDao();;
-//			String bakPath  = configBean.getBakPath()+File.separator + monitorTask.getTaskName();
-//			fileIndexDao.setDataSource(new DBConfig().indexDataSource(bakPath+File.separator+monitorTask.getTaskName()));
-//			fileIndexDao.connectDB();
-//			
-//			
-//			fileIndexDao.closeConnection();
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//		return true;
-//	}
 	
 	/**
 	 * 自动加载
@@ -187,7 +148,8 @@ public class ControlCenter {
 		
 			if(!safeMonitor(monitorTask,fileIndexDao)){
 				GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
-				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Is Lost : " + monitorTask.getMonitorPath());
+				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Is Lost: " + monitorTask.getMonitorPath());
+				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tStop Monitor: " + monitorTask.getMonitorPath());
 				return false;
 			}
 
@@ -243,11 +205,14 @@ public class ControlCenter {
 		// 自检模式模式下,检查文件树
 		else{
 			// 下载服务器的文件树
+			IOC.log.info("Searching For Bak Index File: " + monitorTask.getMonitorPath());
+			globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tSearching For Bak Index File: " + monitorTask.getMonitorPath());
 			HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);
 			File bakFlag = new File(configBean.getBakPath()+File.separator+monitorTask.getFlagName());
 			byte[] contentBytes = httpHandler.download(monitorTask.getFlagName());
 			String cachPath = configBean.getCachPath()+File.separator+monitorTask.getTaskName()+File.separator+monitorTask.getFlagName();
 			if(contentBytes!=null){
+				System.out.println(contentBytes[0]);
 				try {
 					Files.write(Paths.get(cachPath), contentBytes,StandardOpenOption.CREATE);
 				} catch (IOException e) {
@@ -256,8 +221,8 @@ public class ControlCenter {
 				
 				// 检查flag树的Sha1，与服务其那边的sha1 是否相同，不正常则恢复flag与文件
 				if(!bakFlag.exists()|| !DataUtil.getSHA1ByFile(bakFlag).equals(DataUtil.getSHA1ByFile(new File(cachPath)))){
-					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Is Inconsistent : " + monitorTask.getMonitorPath());
-				    
+					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Is Inconsistent: " + monitorTask.getMonitorPath());
+					IOC.log.info("The Bak Index File Is Inconsistent: " + monitorTask.getMonitorPath());
 					// 将cach下的flag文件复制到bak目录下
 					File source = new File(cachPath);
 					File dest = new File(configBean.getBakPath()+File.separator+monitorTask.getFlagName());
@@ -269,13 +234,16 @@ public class ControlCenter {
 					}catch (Exception e) {
 						e.printStackTrace();
 					}
-					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Has Fixed : " + monitorTask.getMonitorPath());
+					IOC.log.info("The Bak Index File Has Fixed: " + monitorTask.getMonitorPath());
+					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Has Fixed: " + monitorTask.getMonitorPath());
 				}
-				
+			
 			}else{
 				if(!bakFlag.exists()){
 					return false;
 				}
+				IOC.log.info("Assume That The Backup File Is Normal Without Networking: " + monitorTask.getMonitorPath());
+				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tAssume That The Backup File Is Normal Without Networking: " + monitorTask.getMonitorPath());
 			} 
 		}
 		
