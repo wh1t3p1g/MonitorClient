@@ -15,3 +15,6 @@ MonitorClient.eml
 MonitorClient.userlibraries
 .classpath
 .project
+monitor_client.eml
+monitor_client.iml
+monitor_client.userlibraries
