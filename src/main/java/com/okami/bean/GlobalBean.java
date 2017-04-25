@@ -18,6 +18,8 @@ public class GlobalBean {
 
     private String taskId;
 
+    private Thread t;
+
     public String getTaskName() {
         return taskName;
     }
@@ -40,5 +42,13 @@ public class GlobalBean {
 
     public void setStatus(int status) {
         this.status = status;
+    }
+
+    public Thread getT() {
+        return t;
+    }
+
+    public void setT(Thread t) {
+        this.t = t;
     }
 }

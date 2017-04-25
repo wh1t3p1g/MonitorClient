@@ -44,6 +44,21 @@ public class LanguageIC extends NeoPi {
         }
     }
 
+    @Override
+    public double calculate(FileContent fileContent) {
+        byte[] data= FileUtil.readByte(fileContent.getFilePath());
+        double char_count=0;
+        double total_char_count=0;
+        int[] temp=charCount(data);
+        for(int i:temp){
+            if(i==0)continue;
+            char_count+=i*(i-1);
+            total_char_count+=i;
+        }
+        double ic=char_count/(total_char_count*(total_char_count - 1));
+        return ic;
+    }
+
 
     public static void test(){
         LanguageIC lic= MonitorClientApplication.ctx.getBean(LanguageIC.class);
