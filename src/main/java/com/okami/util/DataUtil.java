@@ -79,9 +79,7 @@ public class DataUtil {
      * @return
      */
     public static String getSHA1(String str) {
-        String md5 = null;
-		md5 = DigestUtils.sha1Hex(str.getBytes());
-        return md5;
+        return DigestUtils.sha1Hex(str.getBytes());
     }
     
     /**
@@ -90,9 +88,7 @@ public class DataUtil {
      * @return
      */
     public static String getSHA1(byte[] byt) {
-        String md5 = null;
-		md5 = DigestUtils.sha1Hex(byt);
-        return md5;
+        return DigestUtils.sha1Hex(byt);
     }
     
     /**
@@ -109,9 +105,9 @@ public class DataUtil {
 			md5 = DigestUtils.sha1Hex(IOUtils.toByteArray(fis));
 	        IOUtils.closeQuietly(fis); 
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}    
         return md5;
     }

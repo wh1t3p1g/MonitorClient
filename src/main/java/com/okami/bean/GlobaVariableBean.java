@@ -1,5 +1,6 @@
 package com.okami.bean;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,7 +54,14 @@ public class GlobaVariableBean {
 		
 		// 开启数据库连接
 		monitorTaskDao.setDataSource(new DBConfig().dataSource());
-
+		try {
+			if(!monitorTaskDao.isTableExist()){
+				monitorTaskDao.createTable();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 	}
 	
 	public List<MonitorTask> getMonitorTaskList(){

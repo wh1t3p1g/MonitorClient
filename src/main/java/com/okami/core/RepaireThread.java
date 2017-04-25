@@ -36,7 +36,7 @@ public class RepaireThread extends Thread{
 	private Queue<String> qHeartBeats;
 	private Queue<String> qRepaire;
 	private ConfigBean configBean;
-	private Map<String, String> httpHeaders ;
+
 
 	/**
 	 * 初始化
@@ -49,11 +49,6 @@ public class RepaireThread extends Thread{
 		this.bakPath = configBean.getBakPath();
 		this.qHeartBeats = globaVariableBean.getQHeartBeats();
 		this.qRepaire = globaVariableBean.getQRepaire();
-		this.httpHeaders = new HashMap<String, String>();
-		this.httpHeaders.put("Charsert", "UTF-8");
-		this.httpHeaders.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:48.0) Gecko/20100101 Firefox/48.0");
-		this.httpHeaders.put("Accept", "*/*");
-		this.httpHeaders.put("Accept-Encoding", "gzip, deflate");
 		return true;
 	}
 	
@@ -75,16 +70,20 @@ public class RepaireThread extends Thread{
 	        	case "Restore":
 	        		// 还原flag中有的文件
 	        		if(restore(textLine[3],textLine[4])){
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" deal success !");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Success!");
+	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Success!");
 	        		}else{
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" deal failed !");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Failed!");
+	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Failed!");
 	        		}
 	        		break;
 	        	case "Remove":
 	        		if(remove(textLine[3],textLine[4])){
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" deal success !");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Success!");
+	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Success!");
 	        		}else{
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" deal failed !");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Failed!");
+	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Failed!");
 	        		}
 	        		break;
 	        	default:

@@ -1,7 +1,6 @@
 package com.okami.util;
 
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import org.ini4j.InvalidFileFormatException;
 import org.ini4j.Wini;
@@ -36,14 +35,14 @@ public class IniUtil {
 			configBean.setStoragePath(ini.get("Storage", "Storage Path",String.class));
 			return configBean;
 		} catch (InvalidFileFormatException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}  
 
 		//  如果取不到配置文件则，自动配置
         configBean = IOC.instance().getClassobj(ConfigBean.class);
-        configBean.setStoragePath("C:\\Users\\dell\\Desktop\\存储地址");
+        configBean.setStoragePath("C:\\Users\\dell\\Desktop\\MonitorC_Backup");
         configBean.setLhost("127.0.0.1");
         configBean.setRhost("192.168.199.183");
         configBean.setLport("61234");
@@ -69,13 +68,18 @@ public class IniUtil {
 				file.createNewFile();
 			}
 			ini = new Wini(file);
+			ini.setComment("Client configuration. \r\nTo avoid unnecessary coding problems, please use the English. ");
+			ini.putComment("Remote", "Configured to connect to the server.");
 			ini.add("Remote", "Remote Mode",configBean.getRemoteMode());
 			ini.add("Remote", "Local Host",configBean.getLhost());
 			ini.add("Remote", "Local Port",configBean.getLport());
 			ini.add("Remote", "Remote Host",configBean.getRhost());
 			ini.add("Remote", "Remote Port",configBean.getRport());
 			ini.add("Remote", "HeartBeat Delay",configBean.getDelay());
+			ini.putComment("Storage", "To avoid unnecessary coding problems, please use the English name of the directory. \r\nMainly used for backup files, log files and cache file storage");
 			ini.add("Storage", "Storage Path",configBean.getStoragePath());
+
+
 			ini.store();
 		} catch (InvalidFileFormatException e) {
 			e.printStackTrace();
@@ -96,11 +100,11 @@ public class IniUtil {
 				return Lport;
 			}
 		} catch (InvalidFileFormatException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 			return "61234";
 		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
+//			e.printStackTrace();
+			return "61234";
 		}  
 		return "61234";
 	}

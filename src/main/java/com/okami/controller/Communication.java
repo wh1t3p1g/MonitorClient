@@ -14,9 +14,11 @@ import com.okami.entities.MonitorTask;
 import com.okami.plugin.ScannerApplication;
 import com.okami.util.DataUtil;
 
+import org.apache.catalina.util.URLEncoder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
@@ -260,10 +262,14 @@ public class Communication {
     	return DataUtil.toJson(res);
     }
     
-    @RequestMapping(value="/getPath",method=RequestMethod.POST)
-    public String getPath(HttpServletRequest request){
-    	String rootPath = request.getParameter("rootPath");
-    	System.out.println(rootPath);        
+    /**
+     * 获取地址
+     * @data 2017年4月25日
+     * @param rootPath
+     * @return
+     */
+    @RequestMapping(value="/getPath",method=RequestMethod.GET)
+    public String getPath(@RequestParam(value = "rootPath", required = true) String rootPath){ 
     	File file = new File(rootPath);
 		return DataUtil.toJson(PathTree.getPath(file));
     }

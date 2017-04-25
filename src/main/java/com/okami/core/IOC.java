@@ -18,7 +18,7 @@ public class IOC {
 	
 	public static ApplicationContext  ctx;
 	
-	public static Log log = LogFactory.getLog(MonitorClientApplication.class);
+	public static Log log ;
 	
 	public static IOC instance() {
 		if (ctx == null) {

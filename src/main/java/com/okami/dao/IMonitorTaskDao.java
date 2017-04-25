@@ -38,6 +38,22 @@ public interface  IMonitorTaskDao {
 	  */
 	 public boolean updateTask(MonitorTask task) throws Exception ;
 	 
+	 /**
+	  * 创建表
+	  * @data 2017年4月25日
+	  * @return
+	  * @throws Exception
+	  */
+	 public boolean createTable() throws Exception;
+	 
+	 /**
+	  * 创建表
+	  * @data 2017年4月25日
+	  * @return
+	  * @throws Exception
+	  */
+	 public boolean isTableExist() throws Exception;
+	 
 //	 /**
 //	  * 连接数据库
 //	  * @data 2017年4月23日

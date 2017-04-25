@@ -142,19 +142,27 @@ public class HeartBeatsThread extends Thread{
 	 * @return
 	 */
 	public boolean writelog(String message){
-		System.out.print(message);
 		FileUtil.write(monitorLogPath, message, true);
 		return true;
 	}
 	
 	public void run(){
-		// 初始化
-
+		// 初始化s
+		CacheLogDao cacheLogDao = new CacheLogDao();
+		cacheLogDao.setDataSource(new DBConfig().dataSource());
+		try {
+			if(!cacheLogDao.isTableExist()){
+				cacheLogDao.createTable();
+			}
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
 		
 		if(configBean.getRemoteMode()==true){
 			nowTime = new Date();
-			String message = String.format("[%s][信息][连接服务器 (%s:%s) ...]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
-			writelog(message);
+			String message = String.format("[%s][Info][Connecting Server (%s:%s) ...]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
+			IOC.log.info(String.format("Connecting Server (%s:%s) ...",configBean.getRhost(),configBean.getRport()));
+			FileUtil.write(heartBeatsLogPath, message, true);
 		}
 		
 		while(true){
@@ -177,15 +185,14 @@ public class HeartBeatsThread extends Thread{
 						// 先存入数据库
 						String text = qHeartBeats.poll();
 						String[] textList =  text.split("\t");
-						String message = String.format("[%s][%s:%s][%s][%s]\r\n",textList[0],configBean.getRhost(),configBean.getRport(),textList[1] ,textList[2]);
+						String message = String.format("[%s][%s][%s]\r\n",textList[0],textList[1] ,textList[2]);
 						writelog(message);
 						sendMonitorEvent(textList[0],textList[1],textList[2]);
 						
 						// 网络不通则存入数据库
 						if(!statusFlag){
 							try {
-								CacheLogDao cacheLogDao = new CacheLogDao();
-								cacheLogDao.setDataSource(new DBConfig().dataSource());
+
 								CacheLog cacheLog = new CacheLog();
 								cacheLog.setTime(textList[0]);
 								cacheLog.setType(textList[1]);;
@@ -201,12 +208,12 @@ public class HeartBeatsThread extends Thread{
 					if(statusFlag ^ diffFlag){
 						diffFlag = statusFlag;
 						if(statusFlag){
-							String message = String.format("[%s][信息][连接服务器 (%s:%s) 成功！]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
-							System.out.print(message);
+							String message = String.format("[%s][Info][Connect Server (%s:%s) Success!]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
+							IOC.log.info(String.format("Connect Server (%s:%s) Success!",configBean.getRhost(),configBean.getRport()));
 							FileUtil.write(heartBeatsLogPath, message, true);
 						}else{
-							String message = String.format("[%s][信息][连接服务器 (%s:%s) 失败！]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
-							System.out.print(message);
+							String message = String.format("[%s][Info][Connect Server (%s:%s) Failed!]\r\n",DateFormat.getDateTimeInstance().format(nowTime),configBean.getRhost(),configBean.getRport());
+							IOC.log.info(String.format("Connect Server (%s:%s) Failed!",configBean.getRhost(),configBean.getRport()));
 							FileUtil.write(heartBeatsLogPath, message, true);
 						}
 					}
@@ -214,8 +221,6 @@ public class HeartBeatsThread extends Thread{
 					// 如果有缓存的log 则进行处理
 					if(statusFlag&&sendLogFlag){
 						try {
-							CacheLogDao cacheLogDao = new CacheLogDao();
-							cacheLogDao.setDataSource(new DBConfig().dataSource());
 							List<CacheLog> CacheLogs = cacheLogDao.queryCacheLog();	
 							for(CacheLog cacheLog:CacheLogs){
 								//发送
