@@ -212,7 +212,6 @@ public class ControlCenter {
 			byte[] contentBytes = httpHandler.download(monitorTask.getFlagName());
 			String cachPath = configBean.getCachPath()+File.separator+monitorTask.getTaskName()+File.separator+monitorTask.getFlagName();
 			if(contentBytes!=null){
-				System.out.println(contentBytes[0]);
 				try {
 					Files.write(Paths.get(cachPath), contentBytes,StandardOpenOption.CREATE);
 				} catch (IOException e) {
@@ -240,6 +239,8 @@ public class ControlCenter {
 			
 			}else{
 				if(!bakFlag.exists()){
+					IOC.log.info("The Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath());
+					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath());
 					return false;
 				}
 				IOC.log.info("Assume That The Backup File Is Normal Without Networking: " + monitorTask.getMonitorPath());

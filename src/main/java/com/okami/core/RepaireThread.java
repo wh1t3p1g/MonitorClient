@@ -71,19 +71,19 @@ public class RepaireThread extends Thread{
 	        		// 还原flag中有的文件
 	        		if(restore(textLine[3],textLine[4])){
 	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Success!");
-	        			IOC.log.info(textLine[2]+textLine[3]+" Deal Success!");
+	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Success!");
 	        		}else{
 	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Failed!");
-	        			IOC.log.info(textLine[2]+textLine[3]+" Deal Failed!");
+	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Failed!");
 	        		}
 	        		break;
 	        	case "Remove":
 	        		if(remove(textLine[3],textLine[4])){
 	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Success!");
-	        			IOC.log.info(textLine[2]+textLine[3]+" Deal Success!");
+	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Success!");
 	        		}else{
 	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Failed!");
-	        			IOC.log.info(textLine[2]+textLine[3]+" Deal Failed!");
+	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Failed!");
 	        		}
 	        		break;
 	        	default:
