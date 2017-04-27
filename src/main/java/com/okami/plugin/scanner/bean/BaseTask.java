@@ -78,6 +78,8 @@ public class BaseTask {
      */
     private Map<String,String> statisticsScanResults;
 
+    private Map<String,String> fullScanResults;
+
     private List<FileContent> fileContents;
 
     public String getTaskName() {
@@ -182,5 +184,13 @@ public class BaseTask {
 
     public void setMode(int mode) {
         this.mode = mode;
+    }
+
+    public Map<String, String> getFullScanResults() {
+        return fullScanResults;
+    }
+
+    public void setFullScanResults(Map<String, String> fullScanResults) {
+        this.fullScanResults = fullScanResults;
     }
 }

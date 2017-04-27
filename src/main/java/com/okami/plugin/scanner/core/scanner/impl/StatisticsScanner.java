@@ -46,7 +46,16 @@ public class StatisticsScanner extends AbstractScanner{
             if(result[0]>result[1])
                 retData.put(fileContent.getFilePath(),Double.toString(result[0]));
         }
-        System.out.println(retData);
         return retData;
     }
+
+    public String calculate(FileContent fileContent){
+        TrainerDataSet trainerDataSet=generateArff.generateTrainerDataSet(fileContent);
+        double[] result=navieBayesClassifier.prediction(trainerDataSet);
+        if(result[0]>result[1])
+            return Double.toString(result[0]);
+        else
+            return "false";
+    }
+
 }

@@ -64,12 +64,14 @@ public class AssignScanner {
             default://选择3种扫描算法 + (指定|所有)文件扫描 => fast/full mode 常用方式
                 fullScanner=MonitorClientApplication.ctx.getBean(FullScanner.class);
                 fullScanner.setTask(task);
-                fullScanner.calculate();
+                task.setFullScanResults(fullScanner.calculate());
+                MonitorClientApplication.log.info(
+                        "full Scan Finished, Found "+
+                                (task.getFullScanResults().size())
+                                +" evil file");
+                System.out.println(task.getFullScanResults());
                 break;
         }
-
-
-
         return 0;
     }
 

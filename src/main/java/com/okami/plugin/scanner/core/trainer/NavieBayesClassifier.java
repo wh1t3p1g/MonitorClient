@@ -78,17 +78,8 @@ public class NavieBayesClassifier {
         if(classifier==null){
             loadModel("config/bayes.model");
         }
+        Instances instances = GenerateArff.init("prediction");
 
-        ArrayList<Attribute> attributes = new ArrayList<>();
-        attributes.add(new Attribute("compression"));
-        attributes.add(new Attribute("entropy"));
-        attributes.add(new Attribute("languageIC"));
-        attributes.add(new Attribute("longestWord"));
-        attributes.add(new Attribute("fileSize"));
-
-        Instances instances = new Instances("statistic_data_set",attributes,0);
-        if(instances.classIndex()==-1)
-            instances.setClassIndex(instances.numAttributes() - 1);
         Instance instance=new DenseInstance(5);
         instance.setValue(0,trainerDataSet.getCompression());
         instance.setValue(1,trainerDataSet.getEntropy());

@@ -37,7 +37,7 @@ public class GenerateArff {
 
     private Instances instances;
 
-    public int init(String status){
+    public static Instances init(String status){
 
         ArrayList<Attribute> attributes = new ArrayList<>();
         attributes.add(new Attribute("compression"));
@@ -52,8 +52,10 @@ public class GenerateArff {
             attributes.add(new Attribute("class",values));
         }
 
-        instances = new Instances("statistic_data_set",attributes,0);
-        return attributes.size();
+        Instances instances = new Instances("statistic_data_set",attributes,0);
+        if(instances.classIndex()==-1)
+            instances.setClassIndex(instances.numAttributes() - 1);
+        return instances;
     }
 
     public TrainerDataSet generateTrainerDataSet(FileContent fileContent){
@@ -87,14 +89,11 @@ public class GenerateArff {
 
 
     public Instances generateInstances(List<TrainerDataSet> trainerDataSets,String status) {
-        //set attributes
-        int size=init(status);
         //set instances
-        if(instances.classIndex()==-1)
-            instances.setClassIndex(instances.numAttributes() - 1);
+        instances=init(status);
         //add instance
         for (TrainerDataSet trainerDataSet: trainerDataSets) {
-            Instance instance = new DenseInstance(size);
+            Instance instance = new DenseInstance(instances.numAttributes());
             instance.setValue(0,trainerDataSet.getCompression());
             instance.setValue(1,trainerDataSet.getEntropy());
             instance.setValue(2,trainerDataSet.getLanguageIC());

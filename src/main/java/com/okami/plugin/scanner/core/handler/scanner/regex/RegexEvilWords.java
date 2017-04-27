@@ -33,7 +33,6 @@ public class RegexEvilWords {
     }
 
     public String calculate(String content){
-        //todo regex
         for (Map.Entry<String,String> entry:features.entrySet()){
             Pattern r = buildRegex(entry.getValue());
             Matcher m = r.matcher(content);
