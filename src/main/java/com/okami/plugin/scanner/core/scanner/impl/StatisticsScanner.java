@@ -1,15 +1,23 @@
 package com.okami.plugin.scanner.core.scanner.impl;
 
+import com.okami.MonitorClientApplication;
+import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.plugin.scanner.core.handler.scanner.statistics.Compression;
 import com.okami.plugin.scanner.core.handler.scanner.statistics.Entropy;
 import com.okami.plugin.scanner.core.handler.scanner.statistics.LanguageIC;
 import com.okami.plugin.scanner.core.handler.scanner.statistics.LongestWord;
 import com.okami.plugin.scanner.core.scanner.AbstractScanner;
+import com.okami.plugin.scanner.core.trainer.GenerateArff;
+import com.okami.plugin.scanner.core.trainer.NavieBayesClassifier;
+import com.okami.plugin.scanner.core.trainer.TrainerDataSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import weka.core.Instance;
+import weka.core.Instances;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -22,18 +30,32 @@ import java.util.Map;
 public class StatisticsScanner extends AbstractScanner{
 
     @Autowired
-    private Entropy entropy;
+    GenerateArff generateArff;
     @Autowired
-    private LanguageIC languageIC;
-    @Autowired
-    private LongestWord longestWord;
-    @Autowired
-    private Compression compression;
-
+    NavieBayesClassifier navieBayesClassifier;
 
     @Override
     public Map<String,String> calculate() {
         Map<String,String> retData=new HashMap<>();
+        List<FileContent> fileContents=getTask().getFileContents();
+        for(FileContent fileContent:fileContents){
+            MonitorClientApplication.log.info(
+                    "start check encrypt: "+fileContent.getFilePath()+" ,size "+fileContent.getSize());
+            TrainerDataSet trainerDataSet=generateArff.generateTrainerDataSet(fileContent);
+            double[] result=navieBayesClassifier.prediction(trainerDataSet);
+            if(result[0]>result[1])
+                retData.put(fileContent.getFilePath(),Double.toString(result[0]));
+        }
         return retData;
     }
+
+    public String calculate(FileContent fileContent){
+        TrainerDataSet trainerDataSet=generateArff.generateTrainerDataSet(fileContent);
+        double[] result=navieBayesClassifier.prediction(trainerDataSet);
+        if(result[0]>result[1])
+            return Double.toString(result[0]);
+        else
+            return "false";
+    }
+
 }

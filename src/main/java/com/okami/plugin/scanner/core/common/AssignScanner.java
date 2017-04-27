@@ -24,49 +24,54 @@ public class AssignScanner {
 
     private BaseTask task;
 
-    @Autowired
     private FuzzyHashScanner fuzzyHashScanner;
-    @Autowired
     private StaticScanner staticScanner;
-    @Autowired
     private StatisticsScanner statisticsScanner;
-    @Autowired
     private FullScanner fullScanner;
 
     public int assignTask(){
         switch (task.getType()){
             case 1://仅选择fuzzyhash scan + 所有文件（不包括指定的排除文件）扫描
                 // load fuzzy hash scan
+                fuzzyHashScanner=MonitorClientApplication.ctx.getBean(FuzzyHashScanner.class);
                 fuzzyHashScanner.setTask(task);
                 task.setFuzzHashScanResults(fuzzyHashScanner.calculate());
                 MonitorClientApplication.log.info(
                         "FuzzHash Scan Finished, Found "+task.getFuzzHashScanResults().size()
                                 +" evil file");
+                System.out.println(task.getFuzzHashScanResults().toString());
                 break;
             case 2://仅选择static scan + 所有文件（不包括指定的排除文件）扫描
                 // load static scan
+                staticScanner=MonitorClientApplication.ctx.getBean(StaticScanner.class);
                 staticScanner.setTask(task);
                 task.setStaticScanResults(staticScanner.calculate());
                 MonitorClientApplication.log.info(
                         "Static Scan Finished, Found "+task.getStaticScanResults().size()
                                 +" evil file");
+                System.out.println(task.getStaticScanResults().toString());
                 break;
             case 3://仅选择statistics scan + 所有文件（不包括指定的排除文件）扫描
                 // load statistic scan
+                statisticsScanner=MonitorClientApplication.ctx.getBean(StatisticsScanner.class);
                 statisticsScanner.setTask(task);
                 task.setStatisticsScanResults(statisticsScanner.calculate());
                 MonitorClientApplication.log.info(
                         "Statistic Scan Finished, Found "+task.getStatisticsScanResults().size()
                                 +" evil file");
+                System.out.println(task.getStatisticsScanResults().toString());
                 break;
             default://选择3种扫描算法 + (指定|所有)文件扫描 => fast/full mode 常用方式
+                fullScanner=MonitorClientApplication.ctx.getBean(FullScanner.class);
                 fullScanner.setTask(task);
-                fullScanner.calculate();
+                task.setFullScanResults(fullScanner.calculate());
+                MonitorClientApplication.log.info(
+                        "full Scan Finished, Found "+
+                                (task.getFullScanResults().size())
+                                +" evil file");
+                System.out.println(task.getFullScanResults());
                 break;
         }
-
-
-
         return 0;
     }
 

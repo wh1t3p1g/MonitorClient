@@ -42,8 +42,8 @@ public class LongestWord extends NeoPi {
 
     @Override
     public double calculate(FileContent fileContent) {
-        String data= FileUtil.readAll(fileContent.getFilePath(),"UTF-8");
-        String[] words=data.split("[\\s\\n\\r]");
+        String data= FileUtil.readAll(fileContent.getFilePath());
+        String[] words=data.split("\\s|\\n|\\r");
         int longest=0;
         String longest_word="";
         for(String word:words){

@@ -35,15 +35,9 @@ public abstract class NeoPi {
 
     public int[] charCount(byte[] data){
         int[] charCount=new int[256];
-        int t;
-        int size=data.length;
-        for(int i=0;i<size;i++){//计算字母出现的次数
-            t=(int)data[i];
-            try{
-                charCount[t]++;
-            }catch (ArrayIndexOutOfBoundsException e){
 
-            }
+        for(byte b:data){
+            charCount[b&0xFF]++;
         }
         return charCount;
     }

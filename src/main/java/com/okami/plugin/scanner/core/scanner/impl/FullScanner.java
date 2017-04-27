@@ -28,22 +28,19 @@ public class FullScanner extends AbstractScanner {
 
     @Autowired
     private RegexEvilWords regexEvilWords;
+    @Autowired
+    private StatisticsScanner statisticsScanner;
 
-    //statistic todo
-
-    public FullScanner(){
-    }
     @Override
     public Map<String, String> calculate() {
         //init
         Map<String,String> fuzzyHashResults=new HashMap<>();
         Map<String,String> staticResults=new HashMap<>();
         Map<String,String> statisticResults=new HashMap<>();
+        Map<String,String> fullResults=new HashMap<>();
         List<FileContent> fileContents=getTask().getFileContents();
         fuzzyHash.setThreshold(90);
         // /.init
-
-
         for (FileContent fileContent : fileContents) {
             String content=FileUtil.readAll(fileContent.getFilePath());
             //checking fuzzyhash
@@ -52,12 +49,20 @@ public class FullScanner extends AbstractScanner {
                 fuzzyHashResults.put(fileContent.getFilePath(),result);
             }
             //checking static
-
+            result=regexEvilWords.calculate(content);
+            if(!result.equals("false")){
+                staticResults.put(fileContent.getFilePath(),result);
+            }
             //checking statistic
-            //todo
-
+            result=statisticsScanner.calculate(fileContent);
+            if(!result.equals("false")){
+                statisticResults.put(fileContent.getFilePath(),result);
+            }
         }
-        return null;
+        fullResults.putAll(fuzzyHashResults);
+        fullResults.putAll(staticResults);
+        fullResults.putAll(statisticResults);
+        return fullResults;
     }
 
 }
