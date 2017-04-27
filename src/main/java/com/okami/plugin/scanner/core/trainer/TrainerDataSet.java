@@ -19,6 +19,8 @@ public class TrainerDataSet {
 
     private double LongestWord;
 
+    private double fileSize;
+
     private String isWebShell;
 
     public double getCompression() {
@@ -59,5 +61,13 @@ public class TrainerDataSet {
 
     public void setIsWebShell(String isWebShell) {
         this.isWebShell = isWebShell;
+    }
+
+    public double getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(double fileSize) {
+        this.fileSize = fileSize;
     }
 }

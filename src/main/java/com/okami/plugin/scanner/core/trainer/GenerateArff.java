@@ -16,6 +16,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author wh1t3P1g
@@ -34,45 +35,73 @@ public class GenerateArff {
     @Autowired
     private LongestWord longestWord;
 
+    private Instances instances;
+
+    public int init(String status){
+
+        ArrayList<Attribute> attributes = new ArrayList<>();
+        attributes.add(new Attribute("compression"));
+        attributes.add(new Attribute("entropy"));
+        attributes.add(new Attribute("languageIC"));
+        attributes.add(new Attribute("longestWord"));
+        attributes.add(new Attribute("fileSize"));
+        if(status.equals("train")){
+            FastVector values=new FastVector(2);
+            values.addElement("yes");
+            values.addElement("no");
+            attributes.add(new Attribute("class",values));
+        }
+
+        instances = new Instances("statistic_data_set",attributes,0);
+        return attributes.size();
+    }
+
+    public TrainerDataSet generateTrainerDataSet(FileContent fileContent){
+        TrainerDataSet trainerDataSet =
+                MonitorClientApplication.ctx.getBean(TrainerDataSet.class);
+        trainerDataSet.setCompression(compression.calculate(fileContent));
+        trainerDataSet.setEntropy(entropy.calculate(fileContent));
+        trainerDataSet.setLanguageIC(languageIC.calculate(fileContent));
+        trainerDataSet.setLongestWord(longestWord.calculate(fileContent));
+        trainerDataSet.setFileSize(fileContent.getSize());
+        return trainerDataSet;
+    }
+
+
     public List<TrainerDataSet> generateData(List<FileContent> fileContents,String flag){
         List<TrainerDataSet> trainerDataSets=new ArrayList<>();
         for (FileContent filecontent : fileContents) {
-            if(filecontent.getSize()<4096)continue;
-            TrainerDataSet trainerDataSet= MonitorClientApplication.ctx.getBean(TrainerDataSet.class);
+//            if(filecontent.getSize()<4096)continue;
+            TrainerDataSet trainerDataSet =
+                    MonitorClientApplication.ctx.getBean(TrainerDataSet.class);
             trainerDataSet.setCompression(compression.calculate(filecontent));
             trainerDataSet.setEntropy(entropy.calculate(filecontent));
             trainerDataSet.setLanguageIC(languageIC.calculate(filecontent));
             trainerDataSet.setLongestWord(longestWord.calculate(filecontent));
+            trainerDataSet.setFileSize(filecontent.getSize());
             trainerDataSet.setIsWebShell(flag);
             trainerDataSets.add(trainerDataSet);
         }
         return trainerDataSets;
     }
 
-    public Instances generatePopularInstance(List<TrainerDataSet> trainerDataSets) {
-        //set attributes
-        ArrayList<Attribute> attributes = new ArrayList<>();
-        attributes.add(new Attribute("compression"));
-        attributes.add(new Attribute("entropy"));
-        attributes.add(new Attribute("languageIC"));
-        attributes.add(new Attribute("longestWord"));
-        FastVector values=new FastVector(2);
-        values.addElement("yes");
-        values.addElement("no");
-        attributes.add(new Attribute("isWebShell",values));
 
+    public Instances generateInstances(List<TrainerDataSet> trainerDataSets,String status) {
+        //set attributes
+        int size=init(status);
         //set instances
-        Instances instances = new Instances("statistic_data_set",attributes,0);
-        System.out.println(instances.numAttributes());
-        instances.setClassIndex(instances.numAttributes() - 1);
+        if(instances.classIndex()==-1)
+            instances.setClassIndex(instances.numAttributes() - 1);
         //add instance
         for (TrainerDataSet trainerDataSet: trainerDataSets) {
-            Instance instance = new DenseInstance(attributes.size());
+            Instance instance = new DenseInstance(size);
             instance.setValue(0,trainerDataSet.getCompression());
             instance.setValue(1,trainerDataSet.getEntropy());
             instance.setValue(2,trainerDataSet.getLanguageIC());
             instance.setValue(3,trainerDataSet.getLongestWord());
-            instance.setValue(instances.attribute("isWebShell"),trainerDataSet.getIsWebShell());
+            instance.setValue(4,trainerDataSet.getFileSize());
+            if(status.equals("train"))
+                instance.setValue(instances.attribute("class"),trainerDataSet.getIsWebShell());
             instances.add(instance);
         }
         return instances;

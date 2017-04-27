@@ -43,7 +43,6 @@ public class EnumFiles {
                     fileContents.add(fileContent);
                 }
             }
-
             if(task.isFilter()){
                 fileContents=this.filter(fileContents,task.getExceptPath(),task.getExceptExtension());
             }
@@ -107,7 +106,7 @@ public class EnumFiles {
      */
     public FileContent setAttrs(Path path) {
         try{
-
+            if(Files.isDirectory(path))return null;
             DateFormat df = new SimpleDateFormat("yyyy/MM/dd H:m:s");
             FileContent fileContent= MonitorClientApplication.ctx.getBean(FileContent.class);
             String fileName=path.getFileName().toString();

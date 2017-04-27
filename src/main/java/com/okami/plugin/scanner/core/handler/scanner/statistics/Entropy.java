@@ -18,29 +18,13 @@ public class Entropy extends NeoPi {
 
     @Override
     public void calculate(){
-        String data=null;
-        String striped_data=null;
         for(FileContent fileContent:fileContents){
             if(!fileContent.getFileExt().equals(fileExt)){
                 continue;
             }
-            double entropy=0;
-            byte[] content=FileUtil.readByte(fileContent.getFilePath());
-            if(content==null)continue;
-            data= new String(content);
-            striped_data=data.replace(" ","");
-            int size=striped_data.length();
-            int[] temp=charCount(striped_data);
-            for(int i:temp){
-                if(i==0)continue;
-                double p_i=(i*1.00)/size;
-                if(p_i>0){
-                    entropy+=-p_i*(Math.log(p_i)/Math.log(2));
-                }
-            }
             Map<String,String> result=new HashMap<>();
             result.put("filename",fileContent.getFilePath());
-            result.put("value",Double.toString(entropy));
+            result.put("value",Double.toString(calculate(fileContent)));
             results.add(result);
         }
     }
@@ -48,21 +32,33 @@ public class Entropy extends NeoPi {
     @Override
     public double calculate(FileContent fileContent) {
         double entropy=0;
-        String data=null;
-        String striped_data=null;
+        byte[] data=null;
         byte[] content=FileUtil.readByte(fileContent.getFilePath());
-        data= new String(content);
-        striped_data=data.replace(" ","");
-        int size=striped_data.length();
-        int[] temp=charCount(striped_data);
-        for(int i:temp){
-            if(i==0)continue;
-            double p_i=(i*1.00)/size;
-            if(p_i>0){
-                entropy+=-p_i*(Math.log(p_i)/Math.log(2));
+        data=strip(content);
+        int size=data.length;
+        int[] temp=charCount(data);
+
+        for(int t:temp){
+            if(t==0)continue;
+            double p_x=(t*1.0)/(size*1.0);
+            if(p_x>0){
+                entropy+=-p_x*(Math.log(p_x)/Math.log(2));
             }
         }
         return entropy;
+    }
+
+    public byte[] strip(byte[] content){
+        List<Byte> temp=new ArrayList<>();
+        for(byte b:content){
+            if((int)b==0x20)continue;
+            temp.add(b);
+        }
+        byte[] res=new byte[temp.size()];
+        for(int i=0;i<temp.size();i++){
+            res[i]=temp.get(i);
+        }
+        return res;
     }
 
 
