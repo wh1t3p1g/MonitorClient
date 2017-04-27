@@ -51,9 +51,7 @@ public class ScannerApplication implements Runnable{
     @Override
     public void run(){
 
-        if(this.isRunning()){//检查是否是在运行
-            // 通知服务器端
-            // todo
+        if(globalBean.getStatus()==1){//检查是否是在运行
             return ;//0 表示正在运行
         }
         globalBean.setStatus(1);
@@ -77,14 +75,6 @@ public class ScannerApplication implements Runnable{
             globalBean.setT(t);
             t.start ();
         }
-    }
-
-    public void stop(){
-        System.out.println(globalBean.getT().isAlive());
-    }
-
-    public Boolean isRunning(){
-        return globalBean.getStatus()==1;
     }
 
     public BaseTask getTask() {

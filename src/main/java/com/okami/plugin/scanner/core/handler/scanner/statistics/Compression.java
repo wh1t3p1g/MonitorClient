@@ -6,6 +6,7 @@ import com.okami.util.ZLibUtil;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import java.nio.channels.ClosedByInterruptException;
 import java.util.HashMap;
 import java.util.Map;
 

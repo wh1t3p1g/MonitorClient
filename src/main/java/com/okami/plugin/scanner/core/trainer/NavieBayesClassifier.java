@@ -9,7 +9,6 @@ import weka.core.*;
 import weka.core.converters.ConverterUtils.DataSource;
 
 import java.io.File;
-import java.util.ArrayList;
 
 /**
  * @author wh1t3P1g

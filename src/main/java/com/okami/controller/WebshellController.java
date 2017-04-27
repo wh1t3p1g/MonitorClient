@@ -34,9 +34,6 @@ public class WebshellController {
 
     private ScannerApplication scannerApplication;
 
-    public WebshellController(){
-    }
-
     @RequestMapping(value="/webshell/task/new",method=RequestMethod.POST)
     public String newTask(HttpServletRequest request){
         if(globalBean.getStatus()==1){
@@ -62,13 +59,11 @@ public class WebshellController {
     @RequestMapping(value="/webshell/task/stop",method=RequestMethod.GET)
     public String stopTask(){
         if(globalBean.getStatus()==1){
-            scannerApplication=MonitorClientApplication.ctx.getBean(ScannerApplication.class);
-            scannerApplication.stop();
+            globalBean.getT().interrupt();
+            globalBean.setStatus(0);
             return "Stop success";
-
         }else{
             return "Nothing to Stop";
-
         }
     }
     @RequestMapping(value="/webshell/dataset/generate",method=RequestMethod.POST)
