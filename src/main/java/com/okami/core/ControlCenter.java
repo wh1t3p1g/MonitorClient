@@ -2,32 +2,24 @@ package com.okami.core;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Dictionary;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import com.okami.MonitorClientApplication;
 import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
 import com.okami.common.HttpHandler;
 import com.okami.config.DBConfig;
+import com.okami.dao.impl.CacheLogDao;
 import com.okami.dao.impl.FileIndexDao;
-import com.okami.dao.impl.MonitorTaskDao;
 import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
-import com.okami.util.IniUtil;
+
 
 /**
  * 控制心中类,到时候名字要改成auto
@@ -36,36 +28,43 @@ import com.okami.util.IniUtil;
  */
 @Component
 public class ControlCenter {
+	@Autowired
+	private HttpHandler httpHandler;
 	
+	@Autowired
+	private ConfigBean configBean;;
+	
+	@Autowired
+	private GlobaVariableBean globaVariableBean;
+	
+	@Autowired
+	private RepaireThread repaireThread;
+	
+	public ControlCenter(){
+		CacheLogDao cacheLogDao = new CacheLogDao();
+		cacheLogDao.setDataSource(new DBConfig().dataSource());
+		try {
+			if(!cacheLogDao.isTableExist()){
+				cacheLogDao.createTable();
+			}
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+	}
+
 	/**
 	 * 初始化函数
 	 * @data 2017年4月3日
 	 * @return
 	 */
 	public boolean init(){
-		// 获取配置
-		ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
-		  
-        // 加载配置文件
-        configBean = IniUtil.getConfig(configBean,System.getProperty("user.dir") + File.separator + "config/config.ini");
-       
         // 初始化路径
         initPath();
 		
-		// 创建启动心跳线程
-    	HeartBeatsThread heartBeatsThread = IOC.instance().getClassobj(HeartBeatsThread.class);
-		heartBeatsThread.init();
-		heartBeatsThread.start();
-		
-		
 		// 恢复线程
-		RepaireThread repaireThread = IOC.instance().getClassobj(RepaireThread.class);
 		repaireThread.init();
 		repaireThread.start();
 		
-		// 功能性函数初始化
-		HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);
-		httpHandler.init();
 		return true;
 	}
 	
@@ -76,7 +75,7 @@ public class ControlCenter {
 	 */
 	private boolean initPath(){
 		// 获取配置
-		ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
+		configBean = IOC.instance().getClassobj(ConfigBean.class);
 		
 		// 初始化目录
 		File file;
@@ -92,10 +91,6 @@ public class ControlCenter {
 		if (!file.exists()) {
 			file.mkdir();
 		}
-		file = new File(configBean.getLogPath());
-		if (!file.exists()) {
-			file.mkdir();
-		}
 
 		return true;
 	}
@@ -108,18 +103,14 @@ public class ControlCenter {
 	 */
 	public boolean audoLoad(){
 		try {
-			// 变量初始化
-			GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
-			
 			// 读取数据库中之前的任务
 			List<MonitorTask> monitorTaskList = globaVariableBean.getMonitorTaskDao().queryTask();
-			
 			// 循环导入之前的任务
 			for(MonitorTask monitorTask:monitorTaskList){
-				
 				// 运行模式开启
 				if(monitorTask.getRunMode() == 1 ||monitorTask.getRunMode() == 2){
-					startMonitor(monitorTask);
+					if(monitorTask.getStatus()==1)
+						startMonitor(monitorTask);
 				}				
 			}
 		} catch (Exception e) {
@@ -139,18 +130,33 @@ public class ControlCenter {
 		
 		// 人工模式
 		if(monitorTask.getRunMode() == 1){
-			humanMonitor(monitorTask,fileIndexDao);
-			return true;
+			if(humanMonitor(monitorTask,fileIndexDao)){
+	    		try {
+	    			monitorTask.setStatus(1);
+					globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				return true;
+			}
 		}
 		
 		// 防篡改模式
 		else if(monitorTask.getRunMode() == 2){
-		
+
 			if(!safeMonitor(monitorTask,fileIndexDao)){
-				GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
 				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Is Lost: " + monitorTask.getMonitorPath());
 				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tStop Monitor: " + monitorTask.getMonitorPath());
+				IOC.log.warn("The Bak Index File Is Lost: "+ monitorTask.getMonitorPath());  
+				IOC.log.warn("Stop Monitor: " + monitorTask.getMonitorPath());  
 				return false;
+			}else{
+	    		try {
+	    			monitorTask.setStatus(1);
+					globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
 			}
 
 		}
@@ -168,7 +174,6 @@ public class ControlCenter {
 		Queue<String> qMonitor = new LinkedList<String>();
 		
 		// 创建监控线程
-		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
 		MonitorThread monitorThread = IOC.instance().getClassobj(MonitorThread.class);
 		monitorThread.init(monitorTask,fileIndexDao);
 		monitorThread.setQqueue(globaVariableBean.getQHeartBeats(),qMonitor , globaVariableBean.getQRepaire());
@@ -189,13 +194,12 @@ public class ControlCenter {
 	 */
 	public boolean safeMonitor(MonitorTask monitorTask,FileIndexDao fileIndexDao){
 		// 初始化
-		ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
-		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
 		String bakPathStr = configBean.getBakPath()+File.separator+monitorTask.getFlagName();
 		Queue<String> qMonitor = new LinkedList<String>();
 		
 		// 备份模式下删除原来的树
 		if(monitorTask.getBCMode() == 0){
+
 			File bakPath = new File(bakPathStr);
 			if(bakPath.exists()){
 				FileUtil.deleteAll(bakPath);
@@ -204,24 +208,24 @@ public class ControlCenter {
 		
 		// 自检模式模式下,检查文件树
 		else{
+			
 			// 下载服务器的文件树
-			IOC.log.info("Searching For Bak Index File: " + monitorTask.getMonitorPath());
+			IOC.log.warn("Searching For Bak Index File: " + monitorTask.getMonitorPath());
 			globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tSearching For Bak Index File: " + monitorTask.getMonitorPath());
-			HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);
 			File bakFlag = new File(configBean.getBakPath()+File.separator+monitorTask.getFlagName());
 			byte[] contentBytes = httpHandler.download(monitorTask.getFlagName());
 			String cachPath = configBean.getCachPath()+File.separator+monitorTask.getTaskName()+File.separator+monitorTask.getFlagName();
 			if(contentBytes!=null){
-				try {
-					Files.write(Paths.get(cachPath), contentBytes,StandardOpenOption.CREATE);
-				} catch (IOException e) {
-					e.printStackTrace();
+				File file = new File(configBean.getCachPath()+File.separator+monitorTask.getTaskName());
+				if(!file.exists()){
+					file.mkdirs();
 				}
+				FileUtil.write(cachPath, contentBytes);
 				
 				// 检查flag树的Sha1，与服务其那边的sha1 是否相同，不正常则恢复flag与文件
 				if(!bakFlag.exists()|| !DataUtil.getSHA1ByFile(bakFlag).equals(DataUtil.getSHA1ByFile(new File(cachPath)))){
 					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Is Inconsistent: " + monitorTask.getMonitorPath());
-					IOC.log.info("The Bak Index File Is Inconsistent: " + monitorTask.getMonitorPath());
+					IOC.log.warn("The Bak Index File Is Inconsistent: " + monitorTask.getMonitorPath());
 					// 将cach下的flag文件复制到bak目录下
 					File source = new File(cachPath);
 					File dest = new File(configBean.getBakPath()+File.separator+monitorTask.getFlagName());
@@ -229,32 +233,30 @@ public class ControlCenter {
 						FileUtil.deleteAll(dest);
 						Files.copy(source.toPath(), dest.toPath());
 					} catch (IOException e) {
-						e.printStackTrace();
+						IOC.log.error(e.getMessage());
 					}catch (Exception e) {
-						e.printStackTrace();
+						IOC.log.error(e.getMessage());
 					}
-					IOC.log.info("The Bak Index File Has Fixed: " + monitorTask.getMonitorPath());
+					IOC.log.warn("The Bak Index File Has Fixed: " + monitorTask.getMonitorPath());
 					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index File Has Fixed: " + monitorTask.getMonitorPath());
 				}
 			
 			}else{
 				if(!bakFlag.exists()){
-					IOC.log.info("The Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath());
+					IOC.log.warn("The Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath());
 					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tThe Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath());
 					return false;
 				}
-				IOC.log.info("Assume That The Backup File Is Normal Without Networking: " + monitorTask.getMonitorPath());
+				IOC.log.warn("Assume That The Backup File Is Normal Without Networking: " + monitorTask.getMonitorPath());
 				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tAssume That The Backup File Is Normal Without Networking: " + monitorTask.getMonitorPath());
 			} 
 		}
-		
 		// 连接数据库
 		fileIndexDao.setDataSource(new DBConfig().indexDataSource(bakPathStr));
 		try {
 			fileIndexDao.connectDB();
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			IOC.log.error(e.getMessage());
 		}
 		
 		// 监控线程
@@ -264,11 +266,10 @@ public class ControlCenter {
 		monitorThread.start();
 		
 		// 备份/自检线程
-		BackupAndCheckThread backupAndCheckThread = new BackupAndCheckThread();
+		BackupAndCheckThread backupAndCheckThread = IOC.instance().getClassobj(BackupAndCheckThread.class);
 		backupAndCheckThread.init(monitorTask, fileIndexDao);
 		backupAndCheckThread.setQqueue(globaVariableBean.getQHeartBeats(), qMonitor, globaVariableBean.getQRepaire());
 		backupAndCheckThread.start();
-		
 		globaVariableBean.getQMonitorList().add(qMonitor);
 		globaVariableBean.getMonitorThreadList().add(monitorThread);
 		globaVariableBean.getBackupAndCheckThreadList().add(backupAndCheckThread);
@@ -285,19 +286,16 @@ public class ControlCenter {
 	 * @return
 	 */
 	public boolean stopMonitor(String taskName){
-		// 变量初始化
-		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
 		
 		// 读取数据库中之前的任务
 		List<MonitorTask> monitorTaskList;
 		try {
-			monitorTaskList = globaVariableBean.getMonitorTaskDao().queryTask();
+			monitorTaskList = globaVariableBean.getMonitorTaskList();
 
-		
 			for(int i=0;i<monitorTaskList.size();i++){
 				if(monitorTaskList.get(i).getTaskName().equals(taskName)){
 					// 关闭
-					monitorTaskList.get(i).setRunMode(0);
+					monitorTaskList.get(i).setStatus(0);
 					
 					// 更新数据库以及关闭文件树连接
 					globaVariableBean.getMonitorTaskDao().updateTask(monitorTaskList.get(i));
@@ -306,97 +304,26 @@ public class ControlCenter {
 					// 关闭监控线程
 					globaVariableBean.getMonitorThreadList().get(i).stop();
 					
+					IOC.log.warn("Stop Monitor: " + monitorTaskList.get(i).getMonitorPath());
+					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+"\tInfo\tStop Monitor: " + monitorTaskList.get(i).getMonitorPath());
+					
 					// 删除相应队列
 					globaVariableBean.getQMonitorList().remove(i);
 					globaVariableBean.getMonitorThreadList().remove(i);
 					globaVariableBean.getBackupAndCheckThreadList().remove(i);
 					globaVariableBean.getFileIndexDaoList().remove(i);
 					globaVariableBean.getMonitorTaskList().remove(i);
+					i--;
+					
+					
 					return true;
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			IOC.log.error(e.getMessage());
 		}
 		return false;
 	}
 	
-	
-	public void work() {
-		
-//		if (configBean.getRemoteMode()) {
-//
-//			while (true) {
-//				try {
-//
-//					byte[] buf = new byte[4096];
-//					int len = input.read(buf);
-//					String jsonStr = new String(buf, 0, len, "UTF-8");
-//					// JSONArray messageJArray = new JSONArray(jsonStr);
-//
-//					// JSONObject messageJObj = messageJArray.getJSONObject(0);
-//					// String command = messageJObj.getString("command");
-//
-//					TaskBean taskBean = ParameterHandle.jsonStrTOTaskBean(jsonStr, configBean);
-//
-//					switch (taskBean.getRunMode()) {
-//					case 0:
-//						// 停止监控
-//						for (int i = 0; i < taskBeanList.size(); i++) {
-//							if (taskBeanList.get(i).getTaskName().equals(taskBean.getTaskName())) {
-//								taskBeanList.get(i).setRunMode(0);
-//								// 停止所有相关线程
-//							}
-//						}
-//						break;
-//					case 1:
-//						// 人工模式
-//
-//						break;
-//					case 2:
-//						// 防篡改模式
-//						if (startMonitor(taskBean)) {
-//							taskBeanList.add(taskBean);
-//						}
-//						break;
-//					case 4:
-//						// 扫描
-//						break;
-//					case 5:
-//						// 返回路径
-//						break;
-//					default:
-//						System.out.println("False");
-//					}
-//
-//					output.write("True".getBytes());
-//					output.flush();
-//
-//					socket.close();
-//
-//				} catch (IOException e) {
-//					e.printStackTrace();
-//				}
-//
-//			}
-//
-//		}
-//
-//		// 本地模式，可用测试
-//		else {
-//			TaskBean taskBean = new TaskBean("test project", configBean);
-//			taskBean.setMonitorPath("C:\\Users\\dell\\Desktop\\测试文件");
-//			taskBean.setRunMode(1);
-//
-//			if (startMonitor(taskBean)) {
-//				// taskBeanList.add(taskBean);
-//			}
-//			try {
-//				Thread.sleep(100000L);
-//			} catch (InterruptedException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
-//		}
-	}
 }

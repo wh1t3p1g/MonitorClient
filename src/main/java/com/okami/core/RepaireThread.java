@@ -5,13 +5,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Queue;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
 import com.okami.common.HttpHandler;
@@ -20,7 +16,6 @@ import com.okami.entities.FileIndex;
 import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
-import com.okami.util.WebUtil;
 import com.okami.util.ZLibUtil;
 
 /**
@@ -31,21 +26,23 @@ import com.okami.util.ZLibUtil;
 @Component
 public class RepaireThread extends Thread{
 	
-	private String cachPath;
+//	private String cachPath;
 	private String bakPath;
 	private Queue<String> qHeartBeats;
 	private Queue<String> qRepaire;
 	private ConfigBean configBean;
 
+	
+	@Autowired
+	GlobaVariableBean globaVariableBean;
 
 	/**
 	 * 初始化
 	 */
 	public boolean init()
 	{		
-		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
 		this.configBean = IOC.instance().getClassobj(ConfigBean.class);
-		this.cachPath = configBean.getCachPath();
+//		this.cachPath = configBean.getCachPath();
 		this.bakPath = configBean.getBakPath();
 		this.qHeartBeats = globaVariableBean.getQHeartBeats();
 		this.qRepaire = globaVariableBean.getQRepaire();
@@ -60,8 +57,9 @@ public class RepaireThread extends Thread{
 			try {
 				sleep(10);
 			} catch (InterruptedException e) {
-				e.printStackTrace();
+				IOC.log.error(e.getMessage());
 			}
+			
 			
 			if(!qRepaire.isEmpty()){ 
 				String text = qRepaire.poll();
@@ -69,21 +67,22 @@ public class RepaireThread extends Thread{
 				switch(textLine[0]){
 	        	case "Restore":
 	        		// 还原flag中有的文件
+	     
 	        		if(restore(textLine[3],textLine[4])){
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Success!");
-	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Success!");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+textLine[2]+textLine[3]+" Deal Success!");
+	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Success!");
 	        		}else{
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Failed!");
-	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Failed!");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+ textLine[1]+"-Machine\t"+textLine[2]+textLine[3]+" Deal Failed!");
+	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Failed!");
 	        		}
 	        		break;
 	        	case "Remove":
 	        		if(remove(textLine[3],textLine[4])){
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Success!");
-	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Success!");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+ textLine[2]+textLine[3]+" Deal Success!");
+	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Success!");
 	        		}else{
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"\t"+textLine[2]+textLine[3]+" Deal Failed!");
-	        			IOC.log.info(textLine[1]+ ": "+textLine[2]+textLine[3]+" Deal Failed!");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+ textLine[2]+textLine[3]+" Deal Failed!");
+	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Failed!");
 	        		}
 	        		break;
 	        	default:
@@ -116,8 +115,6 @@ public class RepaireThread extends Thread{
 	 * @param dir
 	 */
 	public boolean restore(String indexPath,String taskName){
-		// 初始化
-		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
 		MonitorTask monitorTask;
 		
 		for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
@@ -155,20 +152,14 @@ public class RepaireThread extends Thread{
 							// 恢复文件
 							String bakname = this.bakPath + File.separator + monitorTask.getTaskName() + File.separator + fileIndex.getSha1().substring(0,2);
 							bakname = bakname + File.separator + fileIndex.getSha1().substring(2);
-							byte[] contentBytes = null;
-							try {
-								contentBytes = ZLibUtil.decompress(Files.readAllBytes(Paths.get(bakname)));
-								
-							} catch (IOException e) {
-								e.printStackTrace();
-							}
-							Files.write(Paths.get(monitorTask.getMonitorPath()+fileIndex.getPath()), contentBytes,StandardOpenOption.CREATE);
+							byte[] contentBytes = ZLibUtil.decompress(FileUtil.readByte(bakname));
+							FileUtil.write(monitorTask.getMonitorPath()+fileIndex.getPath(), contentBytes);							
 						}
 					}
 					
 
 				} catch (Exception e) {
-					e.printStackTrace();
+					IOC.log.error(e.getMessage());
 				} 
 				break;
 			}
@@ -185,7 +176,6 @@ public class RepaireThread extends Thread{
 	 */
 	public boolean remove(String indexPath,String taskName){
 		// 初始化
-		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
 		MonitorTask monitorTask;
 		
 		for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
@@ -224,7 +214,7 @@ public class RepaireThread extends Thread{
 					}
 					
 				} catch (Exception e) {
-					e.printStackTrace();
+					IOC.log.error(e.getMessage());
 				} 
 			}
 			

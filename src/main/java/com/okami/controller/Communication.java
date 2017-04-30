@@ -3,16 +3,17 @@ package com.okami.controller;
 import com.okami.MonitorClientApplication;
 import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
-import com.okami.common.PathTree;
+import com.okami.bean.Message;
+import com.okami.bean.PathTree;
 import com.okami.config.DBConfig;
 import com.okami.core.ControlCenter;
-import com.okami.core.HeartBeatsThread;
 import com.okami.core.IOC;
 import com.okami.core.RepaireThread;
 import com.okami.dao.impl.MonitorTaskDao;
 import com.okami.entities.MonitorTask;
 import com.okami.plugin.ScannerApplication;
 import com.okami.util.DataUtil;
+import com.okami.util.FileUtil;
 
 import org.apache.catalina.util.URLEncoder;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -56,30 +57,26 @@ public class Communication {
      * @param request
      * @return
      */
-    @RequestMapping(value="/remove",method=RequestMethod.POST)
+    @RequestMapping(value="/remove",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String remove(HttpServletRequest request){
-    	Map<String,String> res = new HashMap<String, String>();
     	String indexPath = request.getParameter("indexPath");
     	String taskName = request.getParameter("taskName");
     	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
     	for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
     		if(globaVariableBean.getMonitorTaskList().get(i).getTaskName().equals(taskName)){
     			if(globaVariableBean.getBackupAndCheckThreadList().get(i).getStatus()==0){
-    				res.put("message","The Monitor Task Is Backuping Or Checking !" );
-    				return DataUtil.toJson(res);
+    				return DataUtil.toJson(returnMessage(-1,"Remove: "+indexPath));
     				
     			}else{
     		        RepaireThread repaireThread = IOC.instance().getClassobj(RepaireThread.class);
     		        if(repaireThread.remove(indexPath.substring(globaVariableBean.getMonitorTaskList().get(i).getMonitorPath().length()), taskName))
     		        {
-        				res.put("message","Remove Success!" );
-        				return DataUtil.toJson(res);
+        				return DataUtil.toJson(returnMessage(1,"Remove: "+indexPath));
     		        }
     			}
     		}
     	}
-		res.put("message","Remove Falied!" );
-		return DataUtil.toJson(res);
+    	return DataUtil.toJson(returnMessage(-2,"Remove: "+indexPath));
     }
     
     /**
@@ -88,7 +85,7 @@ public class Communication {
      * @param request
      * @return
      */
-    @RequestMapping(value="/getMonitor",method=RequestMethod.POST)
+    @RequestMapping(value="/getMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String getMonitor(HttpServletRequest request){
     	
     	String taskName =  request.getParameter("taskName");
@@ -107,12 +104,10 @@ public class Communication {
         			Map<String,MonitorTask> res = new HashMap<String, MonitorTask>();
         			res.put( String.valueOf(monitorTask.getTaskId()),monitorTask);
     			}else{
-    				Map<String,String> res = new HashMap<String, String>();
-    				res.put("message","This Monirtor Task Is Not Exist!" );
-    				return DataUtil.toJson(res);
+    				return DataUtil.toJson(returnMessage(-2,"Get Monitor: "+taskName));
     			}
     		} catch (Exception e) {
-    			e.printStackTrace();
+    			IOC.log.error(e.getMessage());
     		}
     	}else{
     		// 返回全部
@@ -129,12 +124,10 @@ public class Communication {
 				}
 				return DataUtil.toJson(res);
 			} catch (Exception e) {
-				e.printStackTrace();
+				IOC.log.error(e.getMessage());
 			}
     	}
-		Map<String,String> res = new HashMap<String, String>();
-		res.put("message","Get Monitor Task Failed!" );
-    	return DataUtil.toJson(res);
+    	return DataUtil.toJson(returnMessage(-7,"Get Monitor: "+taskName));
     }
     
     /**
@@ -143,36 +136,46 @@ public class Communication {
      * @param request
      * @return
      */
-    @RequestMapping(value="/addMonitor",method=RequestMethod.POST)
+    @RequestMapping(value="/addMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String addMonitor(HttpServletRequest request){
-    	Map<String,String> res = new HashMap<String, String>();
     	String taskName =  request.getParameter("taskName");
-    	String flagName = DataUtil.getMD5("flag"+DataUtil.getTimeStamp())+".ind";
+    	String flagName = taskName + ".ind";
     	String projectName =  request.getParameter("projectName");
     	String monitorPath =  request.getParameter("monitorPath");
     	String whiteList =  request.getParameter("whiteList");
     	String blackList =  request.getParameter("blackList");
     	String remark =  request.getParameter("remark");
     	int RunMode = Integer.parseInt(request.getParameter("RunMode"));
+    	if(File.separator.equals("\\")){
+    		monitorPath = monitorPath.replaceAll("/", "\\\\");
+    		whiteList = whiteList.replaceAll("/", "\\\\");
+    		blackList = blackList.replaceAll("/", "\\\\");
+    	}else{
+    		monitorPath = monitorPath.replaceAll("\\\\", "/");
+    		whiteList = whiteList.replaceAll("\\\\", "/");
+    		blackList = blackList.replaceAll("\\\\", "/");
+    	}
     	
     	// 路径不存在
     	if(!new File(monitorPath).exists()){
-    		res.put("message","This Path Is Not Exist!" );
-    		return DataUtil.toJson(res);
+        	return DataUtil.toJson(returnMessage(-4,"Add Monitor: "+taskName));
     	}
     	
     	// 数据库中已存在
     	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
     	MonitorTaskDao monitorTaskDao = globaVariableBean.getMonitorTaskDao();
+   
     	try {
 			for(MonitorTask monitorTask:monitorTaskDao.queryTask()){
 				if(monitorTask.getMonitorPath().equals(monitorPath)||monitorTask.getTaskName().equals(taskName)){
-		    		res.put("message","This Task Is Exist!" );
-		    		return DataUtil.toJson(res);
+			    	return DataUtil.toJson(returnMessage(-3,"Add Monitor: "+taskName));
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+
+			
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Add Monitor: "+taskName));
 		}
     	
     	// 添加到数据库
@@ -188,12 +191,77 @@ public class Communication {
         	monitorTask.setMaxSize("2097152");
         	monitorTask.setBCMode(0);
         	monitorTask.setRunMode(RunMode);
+        	monitorTask.setStatus(0);
 			monitorTaskDao.insertTask(monitorTask);
 		} catch (Exception e) {
 			e.printStackTrace();
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Add Monitor: "+taskName));
 		}
-		res.put("message","Add Task Success!" );
-		return DataUtil.toJson(res);
+    	return DataUtil.toJson(returnMessage(1,"Add Monitor: "+taskName));
+    }
+    
+    /**
+     * 编辑监控任务
+     * @data 2017年4月23日
+     * @param request
+     * @return
+     */
+    @RequestMapping(value="/editMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
+    public String editMonitor(HttpServletRequest request){
+    	
+    	String taskName =  request.getParameter("taskName");
+    	String flagName = taskName + ".ind";
+    	String projectName =  request.getParameter("projectName");
+    	String monitorPath =  request.getParameter("monitorPath");
+    	String whiteList =  request.getParameter("whiteList");
+    	String blackList =  request.getParameter("blackList");
+    	String remark =  request.getParameter("remark");
+    	int RunMode = Integer.parseInt(request.getParameter("RunMode"));
+    	
+    	if(File.separator.equals("\\")){
+    		monitorPath = monitorPath.replaceAll("/", "\\\\");
+    		whiteList = whiteList.replaceAll("/", "\\\\");
+    		blackList = blackList.replaceAll("/", "\\\\");
+    	}else{
+    		monitorPath = monitorPath.replaceAll("\\\\", "/");
+    		whiteList = whiteList.replaceAll("\\\\", "/");
+    		blackList = blackList.replaceAll("\\\\", "/");
+    	}
+    	
+    	// 路径不存在
+    	if(!new File(monitorPath).exists()){
+        	return DataUtil.toJson(returnMessage(-4,"Edit Monitor: "+taskName));
+    	}
+    	
+    	// 数据库中已存在
+    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
+    	MonitorTaskDao monitorTaskDao = globaVariableBean.getMonitorTaskDao();
+    	try {
+			for(MonitorTask mTask:monitorTaskDao.queryTask()){
+				if(mTask.getMonitorPath().equals(monitorPath)||mTask.getTaskName().equals(taskName)){
+					// 修改数据库
+					MonitorTask monitorTask = IOC.instance().getClassobj(MonitorTask.class);
+		        	monitorTask.setTaskName(taskName);
+		        	monitorTask.setMonitorPath(monitorPath);
+		        	monitorTask.setBlackList(blackList);
+		        	monitorTask.setWhiteList(whiteList);
+		        	monitorTask.setProjectName(projectName);
+		        	monitorTask.setFlagName(flagName);
+		        	monitorTask.setRemark(remark);
+		        	monitorTask.setMaxSize("2097152");
+		        	monitorTask.setBCMode(0);
+		        	monitorTask.setStatus(0);
+		        	monitorTask.setRunMode(RunMode);					
+					monitorTaskDao.updateTask(monitorTask);
+					
+			    	return DataUtil.toJson(returnMessage(1,"Edit Monitor: "+taskName));
+				}
+			}
+		} catch (Exception e) {
+			IOC.log.error(e.getMessage());
+		}
+    	return DataUtil.toJson(returnMessage(-2,"Edit Monitor: "+taskName));
     }
     
     /**
@@ -202,17 +270,18 @@ public class Communication {
      * @param request
      * @return
      */
-    @RequestMapping(value="/startMonitor",method=RequestMethod.POST)
+    @RequestMapping(value="/startMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String startMonitor(HttpServletRequest request){
-    	Map<String,String> res = new HashMap<String, String>();
     	String taskName =  request.getParameter("taskName");
     	
     	// 查看任务是否运行
     	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
     	for(MonitorTask monitorTask:globaVariableBean.getMonitorTaskList()){
     		if(monitorTask.getTaskName().equals(taskName)){
-    			res.put("message","This Task Is Running!");
-    			return DataUtil.toJson(res);
+    			if(monitorTask.getStatus()==1){
+			    	return DataUtil.toJson(returnMessage(-5,"Start Monitor: "+taskName));
+        			
+    			}
     		}
     	}
     	
@@ -221,18 +290,17 @@ public class Communication {
     	try {
 			for(MonitorTask monitorTask:monitorTaskDao.queryTask()){
 				if(monitorTask.getTaskName().equals(taskName)){
+					
 			    	ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
 			    	if(controlCenter.startMonitor(monitorTask)){
-		    			res.put("message","Task Run Success!");
-		    			return DataUtil.toJson(res);
+				    	return DataUtil.toJson(returnMessage(1,"Start Monitor: "+taskName));
 			    	}
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			IOC.log.error(e.getMessage());
 		} 
-		res.put("message","This Task Is Not Exist!");
-		return DataUtil.toJson(res);
+    	return DataUtil.toJson(returnMessage(-2,"Start Monitor: "+taskName));
     }
     
     /**
@@ -244,7 +312,6 @@ public class Communication {
     @RequestMapping(value="/stopMonitor",method=RequestMethod.POST)
     public String stopMonitor(HttpServletRequest request){
     	String taskName =  request.getParameter("taskName");
-    	Map<String,String> res = new HashMap<String, String>();
     	
     	// 查看任务是否运行
     	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
@@ -252,15 +319,63 @@ public class Communication {
     		if(monitorTask.getTaskName().equals(taskName)){
     			ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
     			if(controlCenter.stopMonitor(taskName)){
-    				res.put("message","Stop Task Success!");
-    				return DataUtil.toJson(res);
+			    	return DataUtil.toJson(returnMessage(1,"Stop Monitor: "+taskName));
     			}
     		}
     	}
     
-    	res.put("message","This Task Is Not Running Or Not Exist!");
-    	return DataUtil.toJson(res);
+    	return DataUtil.toJson(returnMessage(-6,"Stop Monitor: "+taskName));
     }
+    
+    
+    @RequestMapping(value="/deleteMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
+    public String deleteMonitor(HttpServletRequest request){
+    	String taskName =  request.getParameter("taskName");
+    	
+    	// 查看任务是否运行
+    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
+    	try {
+			for(MonitorTask mTask:globaVariableBean.getMonitorTaskDao().queryTask()){
+				if(mTask.getTaskName().equals(taskName)){
+					if(mTask.getRunMode()==1||mTask.getRunMode()==2){
+						ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
+						if(!controlCenter.stopMonitor(taskName)){
+							return DataUtil.toJson(returnMessage(-9,"Delete Monitor: "+taskName));
+						}
+					}
+				}
+			}
+		} catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Delete Monitor: "+taskName));
+		}
+    	
+    	// 数据库中有执行任务
+    	MonitorTaskDao monitorTaskDao = globaVariableBean.getMonitorTaskDao();
+    	try {
+    		MonitorTask monitorTask = monitorTaskDao.queryTaskByTaskName(taskName);
+    		if(monitorTaskDao.deleteTask(taskName)){	
+    		    // 删除备份文件
+    			ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
+    			File deleteFile = new File(configBean.getBakPath()+File.separator+taskName);
+    			if(deleteFile.exists()){
+    				FileUtil.deleteAll(deleteFile);
+    			}
+    			deleteFile = new File(configBean.getCachPath()+File.separator+taskName);
+    			if(deleteFile.exists()){
+    				FileUtil.deleteAll(deleteFile);
+    			}
+    			return DataUtil.toJson(returnMessage(1,"Delete Monitor: "+taskName));
+    		}
+		} catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Delete Monitor: "+taskName));
+		} 
+
+		return DataUtil.toJson(returnMessage(-2,"Delete Monitor: "+taskName));
+    }
+    
+    
     
     /**
      * 获取地址
@@ -268,37 +383,55 @@ public class Communication {
      * @param rootPath
      * @return
      */
-    @RequestMapping(value="/getPath",method=RequestMethod.GET)
+    @RequestMapping(value="/getPath",method=RequestMethod.GET, produces = "application/json; charset=utf-8")
     public String getPath(@RequestParam(value = "rootPath", required = true) String rootPath){ 
     	File file = new File(rootPath);
-		return DataUtil.toJson(PathTree.getPath(file));
+    	List<PathTree> pathTree = PathTree.getPath(file);
+    	if (pathTree == null ||pathTree.size() == 0 )
+    		return DataUtil.toJson(returnMessage(-1,pathTree,"Get Path: "+rootPath));
+		return DataUtil.toJson(returnMessage(1,pathTree,"Get Path: "+rootPath));
     }
     
+    public Message returnMessage(int status,String mission){
+    	String message = "";
+    	switch(status){
+    		case 1: message = "Mission Success("+mission+"): Deal Mission Sucess!"; break;
+    		case -1: message = "Mission Failed("+mission+"): The Monitor Task Is Backuping Or Checking!"; break;
+    		case -2: message = "Mission Failed("+mission+"): The Monitor Task Is Not Exist!"; break;
+    		case -3: message = "Mission Failed("+mission+"): The Monitor Task Is Exist!";break;
+    		case -4: message = "Mission Failed("+mission+"): This Monitor Task's Path Is Not Exist!"; break;
+    		case -5: message = "Mission Failed("+mission+"): This Monitor Task Is Running!"; break;
+    		case -6: message = "Mission Failed("+mission+"): This Monitor Task Is Not Running Or Not Exist!"; break;
+    		case -7: message = "Mission Failed("+mission+"): Get Monitor Task Failed!";break;
+    		case -8: message = "Mission Failed("+mission+"): Error occurred!"; break;
+    		case -9: message = "Mission Failed("+mission+"): This Monitor Task Stop Failed!"; break;
+    	}
+    	
+    	if(status==1){
+    		IOC.log.warn(message);
+    	}else{
+    		IOC.log.warn(message);
+    	}
+    	
+    	return new Message(status,message);
+    }
     
-//    @RequestMapping(value="/startMonitor/{taskName}",method=RequestMethod.GET)
-//    public String startMonitor(@PathVariable String taskName){
-//    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
-//    	MonitorTask monitorTask = IOC.instance().getClassobj(MonitorTask.class);
-// 
-//    	monitorTask.setFlagName(DataUtil.getMD5("flag"+DataUtil.getTimeStamp())+".ind");
-//    	monitorTask.setProjectName("Test");
-//    	monitorTask.setMonitorPath("C:\\Users\\dell\\Desktop\\测试文件");
-//    	monitorTask.setWhiteList("Aaa");
-//    	monitorTask.setBlackList("php,asp,jsp,html");
-//    	monitorTask.setRemark("测试");
-//    	monitorTask.setBCMode(0);
-//    	monitorTask.setRunMode(1);
-//    	monitorTask.setMaxSize("2097152");
-//    	
-//    	try {
-//			globaVariableBean.getMonitorTaskDao().insertTask(monitorTask);
-//		} catch (Exception e) {
-//			e.printStackTrace();
-//		}
-//    	
-//    	ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
-//    	controlCenter.startMonitor(monitorTask);
-//
-//    	return "Success ! ";
-//    }
+    public Message returnMessage(int status,Object node,String mission){
+    	String message = "";
+    	switch(status){
+    		case 1: message = "Mission Success("+mission+"): Deal Mission Sucess!"; break;
+    		case -1: message = "Mission Failed("+mission+"): This Path Is Not Exist!"; break;
+    	}
+    	
+    	if(status==1){
+    		IOC.log.warn(message);
+    	}else{
+    		IOC.log.warn(message);
+    	}
+    	
+    	Message mg = new Message(status,message);
+    	mg.setNode(node);
+    	return mg;
+    }
+    
 }

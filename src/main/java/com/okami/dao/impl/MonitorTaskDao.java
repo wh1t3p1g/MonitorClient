@@ -58,7 +58,8 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 		    	int BCMode = rs.getInt("BCMode");
 		    	String remark = rs.getString("Remark");
 		    	String maxSize = rs.getString("MaxSize");
-		    	MonitorTask task = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize);
+		    	int status = rs.getInt("Status");
+		    	MonitorTask task = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize,status);
 		    	list.add(task);
 		    }
 		} catch (SQLException e) {
@@ -77,7 +78,7 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 	@Override
 	public boolean insertTask(MonitorTask monitorTask) throws Exception {
 		String sql = "INSERT INTO MonitorTask " +
-				"(TaskName,ProjectName,MonitorPath,WhiteList,BlackList,FlagName,RunMode,BCMode,Remark,MaxSize) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+				"(TaskName,ProjectName,MonitorPath,WhiteList,BlackList,FlagName,RunMode,BCMode,Remark,MaxSize,Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		Connection conn = null;
 		
 		try {
@@ -93,6 +94,7 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 			ps.setInt(8, monitorTask.getBCMode());
 			ps.setString(9, monitorTask.getRemark());
 			ps.setString(10, monitorTask.getMaxSize());
+			ps.setInt(11, monitorTask.getStatus());
 			ps.executeUpdate();
 			ps.close();
 			
@@ -111,23 +113,23 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 
 	@Override
 	public boolean updateTask(MonitorTask monitorTask) throws Exception {
-		String sql = "UPDATE MonitorTask SET TaskName=?,ProjectName=?,MonitorPath=?,WhiteList=?,BlackList=?,FlagName=?,RunMode=?,BCMode=?,Remark=?,MaxSize=? WHERE TaskId = ?";
+		String sql = "UPDATE MonitorTask SET ProjectName=?,MonitorPath=?,WhiteList=?,BlackList=?,FlagName=?,RunMode=?,BCMode=?,Remark=?,MaxSize=?,Status=? WHERE TaskName = ?";
 		Connection conn = null;
 		
 		try {
 			conn = dataSource.getConnection();
 			PreparedStatement ps = conn.prepareStatement(sql);
-			ps.setString(1, monitorTask.getTaskName());
-			ps.setString(2, monitorTask.getProjectName());
-			ps.setString(3, monitorTask.getMonitorPath());
-			ps.setString(4, monitorTask.getWhiteList());
-			ps.setString(5, monitorTask.getBlackList());
-			ps.setString(6, monitorTask.getFlagName());
-			ps.setInt(7, monitorTask.getRunMode());
-			ps.setInt(8, monitorTask.getBCMode());
-			ps.setString(9, monitorTask.getRemark());
-			ps.setString(10, monitorTask.getMaxSize());
-			ps.setInt(11, monitorTask.getTaskId());
+			ps.setString(1, monitorTask.getProjectName());
+			ps.setString(2, monitorTask.getMonitorPath());
+			ps.setString(3, monitorTask.getWhiteList());
+			ps.setString(4, monitorTask.getBlackList());
+			ps.setString(5, monitorTask.getFlagName());
+			ps.setInt(6, monitorTask.getRunMode());
+			ps.setInt(7, monitorTask.getBCMode());
+			ps.setString(8, monitorTask.getRemark());
+			ps.setString(9, monitorTask.getMaxSize());
+			ps.setInt(10, monitorTask.getStatus());
+			ps.setString(11, monitorTask.getTaskName());
 
 			ps.executeUpdate();
 			ps.close();
@@ -168,7 +170,8 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 		    	int BCMode = rs.getInt("BCMode");
 		    	String remark = rs.getString("Remark");
 		    	String maxSize = rs.getString("MaxSize");
-		    	monitorTask = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize);
+		    	int status = rs.getInt("Status");
+		    	monitorTask = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize,status);
 			}
 			rs.close();
 			ps.close();
@@ -200,6 +203,7 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 					+ "'BCMode'  INTEGER,"
 					+ "'Remark'  TEXT,"
 					+ "'MaxSize'  TEXT,"
+					+ "'Status'  INTEGER,"
 					+ "PRIMARY KEY ('TaskId' ASC)"
 					+ ")";
 					
@@ -247,6 +251,33 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 			}
 		}
 		return flag;
+	}
+
+
+	@Override
+	public boolean deleteTask(String taskName) throws Exception {
+		String sql = "Delete from MonitorTask where TaskName = ?";
+		Connection conn = null;
+		int flag = 0;
+		try {
+			conn = dataSource.getConnection();
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setString(1,taskName);
+			flag = ps.executeUpdate();
+			ps.close();
+			
+		} catch (SQLException e) {
+			throw new RuntimeException(e);
+		} finally {
+			if (conn != null) {
+				try {
+					conn.close();
+				} catch (SQLException e) {}
+			}
+		}
+		if(flag != 0 )
+			return true;
+		return false;
 	}
 
 }

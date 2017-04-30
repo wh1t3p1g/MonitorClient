@@ -40,7 +40,7 @@ public class CacheLogDao implements ICacheLogDao {
 		 List<CacheLog> list = new ArrayList<CacheLog>();
 		try {
 			conn = dataSource.getConnection();
-			String sql = "Select * from CacheLog";
+			String sql = "Select * from CacheLog limit 0,20";
 		    Statement smt = conn.createStatement();
 	
 		    ResultSet rs = smt.executeQuery(sql);

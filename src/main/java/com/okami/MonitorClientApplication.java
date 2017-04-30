@@ -12,23 +12,23 @@ import org.springframework.boot.context.embedded.EmbeddedServletContainerCustomi
 import org.springframework.boot.context.embedded.MimeMappings;
 import org.springframework.boot.web.support.SpringBootServletInitializer;
 import org.springframework.context.ApplicationContext;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
-
+@EnableScheduling
 @SpringBootApplication
 public class MonitorClientApplication extends SpringBootServletInitializer implements EmbeddedServletContainerCustomizer {
 
 	public static ApplicationContext  ctx;
 
-	public static Log log= LogFactory.getLog(MonitorClientApplication.class);
+	public static Log log = LogFactory.getLog(MonitorClientApplication.class);
 	
 	public static void main(String[] args) {	
+		IOC.log=log;
 		ctx  = SpringApplication.run(MonitorClientApplication.class, args);
 		IOC.ctx=ctx;
-		IOC.log=log;
-//		ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
-//		controlCenter.init();
-//        controlCenter.audoLoad();
-
+		ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
+		controlCenter.init();
+        controlCenter.audoLoad();
 	}
 
 	@Override

@@ -2,10 +2,10 @@ package com.okami.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import org.ini4j.InvalidFileFormatException;
 import org.ini4j.Wini;
-
-import com.okami.bean.ConfigBean;
 import com.okami.core.IOC;
 
 /**
@@ -22,18 +22,24 @@ public class IniUtil {
 	 * @param iniPath
 	 * @return
 	 */
-	public static ConfigBean getConfig(ConfigBean configBean,String iniPath){
+	public static Map<String,String> getConfig(String iniPath){
+		Map<String,String>  config = new HashMap<String, String>();
         Wini ini;
 		try {
+			
 			ini = new Wini(new File(iniPath));
-			configBean.setRemoteMode(ini.get("Remote", "Remote Mode",boolean.class));
-			configBean.setLhost(ini.get("Remote", "Local Host",String.class));
-			configBean.setLport(ini.get("Remote", "Local Port",String.class));
-			configBean.setRhost(ini.get("Remote", "Remote Host",String.class));
-			configBean.setRport(ini.get("Remote", "Remote Port",String.class));
-			configBean.setDelay(ini.get("Remote", "HeartBeat Delay",int.class));
-			configBean.setStoragePath(ini.get("Storage", "Storage Path",String.class));
-			return configBean;
+			config.put("lhost", ini.get("Remote", "Local Host",String.class));
+			config.put("lport", ini.get("Remote", "Local Port",String.class));
+			config.put("rhost", ini.get("Remote", "Remote Host",String.class));
+			config.put("rport", ini.get("Remote", "Remote Port",String.class));
+			config.put("delay", ini.get("Remote", "HeartBeat Delay",String.class));
+			config.put("storagePath", ini.get("Storage", "Storage Path",String.class));
+			config.put("monitorPathList", ini.get("Monitor", "Monitor Path List",String.class));
+			if(config.get("monitorPathList")==null||config.get("monitorPathList").equals("")){
+				 IOC.log.error("Please configure the configuration file (config.ini)");
+				 System.exit(0);
+			}
+			return config;
 		} catch (InvalidFileFormatException e) {
 //			e.printStackTrace();
 		} catch (IOException e) {
@@ -41,16 +47,16 @@ public class IniUtil {
 		}  
 
 		//  如果取不到配置文件则，自动配置
-        configBean = IOC.instance().getClassobj(ConfigBean.class);
-        configBean.setStoragePath("C:\\Users\\dell\\Desktop\\MonitorC_Backup");
-        configBean.setLhost("127.0.0.1");
-        configBean.setRhost("192.168.199.183");
-        configBean.setLport("61234");
-        configBean.setRport("80");
-        configBean.setDelay(60);
-        configBean.setRemoteMode(true);
-     	IniUtil.setConfig(configBean,System.getProperty("user.dir") + File.separator + "config/config.ini");
-		return configBean;
+
+		config.put("lhost", "127.0.0.1");
+		config.put("lport", "61234");
+		config.put("rhost", "192.168.199.183");
+		config.put("rport", "80");
+		config.put("delay", "60" );
+		config.put("storagePath", System.getProperty("user.dir")+File.separator+"MonitorC_Backup");
+		config.put("monitorPathList", "" );
+     	IniUtil.setConfig(config,System.getProperty("user.dir") + File.separator + "config/config.ini");
+		return config;
 	}
 	
 	/**
@@ -60,7 +66,7 @@ public class IniUtil {
 	 * @param iniPath
 	 * @return
 	 */
-	public static boolean setConfig(ConfigBean configBean,String iniPath){
+	public static boolean setConfig(Map<String,String>  config,String iniPath){
         Wini ini;
 		try {
 			File file = new File(iniPath);
@@ -68,18 +74,17 @@ public class IniUtil {
 				file.createNewFile();
 			}
 			ini = new Wini(file);
-			ini.setComment("Client configuration. \r\nTo avoid unnecessary coding problems, please use the English. ");
-			ini.putComment("Remote", "Configured to connect to the server.");
-			ini.add("Remote", "Remote Mode",configBean.getRemoteMode());
-			ini.add("Remote", "Local Host",configBean.getLhost());
-			ini.add("Remote", "Local Port",configBean.getLport());
-			ini.add("Remote", "Remote Host",configBean.getRhost());
-			ini.add("Remote", "Remote Port",configBean.getRport());
-			ini.add("Remote", "HeartBeat Delay",configBean.getDelay());
-			ini.putComment("Storage", "To avoid unnecessary coding problems, please use the English name of the directory. \r\nMainly used for backup files, log files and cache file storage");
-			ini.add("Storage", "Storage Path",configBean.getStoragePath());
-
-
+			ini.setComment("Client configuration. \r\nTo avoid unnecessary coding problems, please use the English. \r\n\r\n");
+			ini.putComment("Remote", "Configured to connect to the server. \r\n");
+			ini.add("Remote", "Local Host",config.get("lhost"));
+			ini.add("Remote", "Local Port",config.get("lport"));
+			ini.add("Remote", "Remote Host",config.get("rhost"));
+			ini.add("Remote", "Remote Port",config.get("rport"));
+			ini.add("Remote", "HeartBeat Delay",config.get("delay"));
+			ini.putComment("Storage", "To avoid unnecessary coding problems, please use the English name of the directory. \r\nMainly used for backup files, log files and cache file storage.\r\n");
+			ini.add("Storage", "Storage Path",config.get("storagePath"));
+			ini.putComment("Monitor", "To avoid unnecessary coding problems, please use the English name of the directory. \r\nThis configuration is sent to the server to set up the monitoring directory. \r\n e.g. C:\\Soft\\xampp\\htdocs,C:\\Users\\dell\\Desktop\\test \r\n");
+			ini.add("Monitor", "Monitor Path List",config.get("monitorPathList"));	
 			ini.store();
 		} catch (InvalidFileFormatException e) {
 			e.printStackTrace();
@@ -100,10 +105,8 @@ public class IniUtil {
 				return Lport;
 			}
 		} catch (InvalidFileFormatException e) {
-//			e.printStackTrace();
 			return "61234";
 		} catch (IOException e) {
-//			e.printStackTrace();
 			return "61234";
 		}  
 		return "61234";

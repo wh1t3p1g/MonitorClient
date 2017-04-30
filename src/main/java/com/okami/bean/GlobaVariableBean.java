@@ -11,7 +11,6 @@ import org.springframework.stereotype.Component;
 
 import com.okami.config.DBConfig;
 import com.okami.core.BackupAndCheckThread;
-import com.okami.core.HeartBeatsThread;
 import com.okami.core.MonitorThread;
 import com.okami.dao.impl.FileIndexDao;
 import com.okami.dao.impl.MonitorTaskDao;
@@ -127,39 +126,6 @@ public class GlobaVariableBean {
 	public void setBackupAndCheckThreadList(List<BackupAndCheckThread> backupAndCheckThreadList){
 		this.backupAndCheckThreadList = backupAndCheckThreadList;
 	}
-	
-//	private ConfigBean configBean;
-
-//	private Queue<String> qHeartBeats;
-
-//	private HeartBeatsThread heartBeatsThread ;
-	
-
-	
-//	public ConfigBean getConfigBean(){
-//		return configBean;
-//	}
-//	
-//	public void setConfigBean(ConfigBean configBean){
-//		this.configBean = configBean;
-//	}
-//	
-//	public Queue<String> getQHeartBeats(){
-//		return qHeartBeats;
-//	}
-//	
-//	public void setQHeartBeats(Queue<String> qHeartBeats){
-//		this.qHeartBeats = qHeartBeats;
-//	}
-//
-//	public HeartBeatsThread getHeartBeatsThread(){
-//		return heartBeatsThread;
-//	}
-//	
-//	public void setHeartBeatsThread(HeartBeatsThread heartBeatsThread){
-//		this.heartBeatsThread = heartBeatsThread;
-//	}
-	
 
 
 }

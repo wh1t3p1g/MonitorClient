@@ -3,11 +3,17 @@ package com.okami.entities;
 import java.util.List;
 import javax.persistence.*;
 
+import org.springframework.context.annotation.Scope;
+import org.springframework.stereotype.Component;
+
 /**
  * 任务实体
  * @author orleven
  * @date 2017年2月13日
  */
+
+@Component
+@Scope("prototype")
 @Entity
 @Table(name="MonitorTask")
 public class MonitorTask {
@@ -77,6 +83,7 @@ public class MonitorTask {
     @Column(name = "MaxSize") 
 	private String maxSize;
     
+    @Column(name = "Status") 
     private int status;
 	
 	public void setTaskId(Integer taskId){
@@ -189,7 +196,7 @@ public class MonitorTask {
 	}
 	
 	
-	public MonitorTask(Integer taskId,String taskName,String projectName,String monitorPath,String whiteList,String blackList,String flagName,int runMode,int BCMode,String remark,String maxSize){
+	public MonitorTask(Integer taskId,String taskName,String projectName,String monitorPath,String whiteList,String blackList,String flagName,int runMode,int BCMode,String remark,String maxSize,int status){
 		this.taskId = taskId;
 		this.taskName = taskName;
 		this.projectName = projectName;
@@ -201,7 +208,7 @@ public class MonitorTask {
 		this.BCMode = BCMode;
 		this.remark = remark;
 		this.maxSize = maxSize;
-		this.status = 0;
+		this.status = status;
 	}
 	
 	public MonitorTask(String taskName){
