@@ -1,9 +1,10 @@
 package com.okami.bean;
 
 import java.io.File;
-
-import org.springframework.context.annotation.Scope;
+import java.util.Map;
 import org.springframework.stereotype.Component;
+import com.okami.core.IOC;
+import com.okami.util.IniUtil;
 
 /**
  * 配置类bean
@@ -57,23 +58,26 @@ public class ConfigBean {
 	 */
 	private String cachPath;
 	
-//	/**
-//	 * 自检地址
-//	 */
-//	private String checkPath;	
-	
-	
 	/**
-	 * 日志地址
+	 * 将此配置发送给服务器，便于服务器设置监控目录。
 	 */
-	private String logPath;
-
+	private String monitorPathList;
 	
 	public ConfigBean(){
+
+		Map<String,String> config = IniUtil.getConfig(System.getProperty("user.dir") + File.separator + "config/config.ini");
+		this.lhost = config.get("lhost");
+		this.lport = config.get("lport");
+		this.rhost = config.get("rhost");
+		this.rport = config.get("rport");
+		this.monitorPathList =  config.get("monitorPathList");
 		
-		this.remoteMode = false;
-		this.delay = 60;
-		this.storagePath = System.getProperty("user.dir");
+		try {
+			this.delay =Integer.valueOf( config.get("delay")).intValue();
+		} catch (NumberFormatException e) {
+			IOC.log.error(e.getMessage());
+		}
+		this.storagePath = config.get("storagePath");
 		setStoragePath(this.storagePath);
 	}
 	
@@ -84,9 +88,8 @@ public class ConfigBean {
 	public void setStoragePath(String storagePath){
 		this.storagePath = storagePath;
 		this.bakPath = this.storagePath +File.separator +"bak";
-//		this.checkPath = this.storagePath + File.separator + "check";
 		this.cachPath = this.storagePath +File.separator +"cach";
-		this.logPath = this.storagePath +File.separator +"log";
+//		this.logPath = this.storagePath +File.separator +"log";
 	}
 	
 	public void setDelay(int delay){
@@ -125,6 +128,14 @@ public class ConfigBean {
 		this.rhost = rhost;
 	}
 
+	public String getMonitorPathList(){
+		return this.monitorPathList;
+	}
+	
+	public void setMonitorPathList(String monitorPathList){
+		this.monitorPathList = monitorPathList;
+	}
+
 	public String getRhost(){
 		return this.rhost;
 	}
@@ -157,11 +168,9 @@ public class ConfigBean {
 //		this.logPath = logPath;
 //	}
 	
-	public String getLogPath(){
-		return logPath;
-	}
-	
-//	public String getCheckPath(){
-//		return checkPath;
+//	public String getLogPath(){
+//		return logPath;
 //	}
+	
+
 }

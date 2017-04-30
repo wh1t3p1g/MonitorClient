@@ -1,4 +1,4 @@
-package com.okami.common;
+package com.okami.bean;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -8,6 +8,11 @@ import java.util.Map;
 
 import com.okami.util.DataUtil;
 
+/**
+ * 用户返回目录结构，与前段js的viewtree对应
+ * @author orleven
+ * @date 2017年4月30日
+ */
 public class PathTree {
 	
 	public String text;
@@ -36,19 +41,26 @@ public class PathTree {
 		for (int i = 0; i < paths.length; i++) {
 			PathTree pathTree = new PathTree();
 			if(paths[i].isDirectory()){
-				pathTree.nodes = new ArrayList();
-			}else{
-				pathTree.nodes = null;
+				
+				pathTree.text = paths[i].getName();
+				pathTree.href = paths[i].getName();
+				int count = 0;
+				for(File subFile:paths[i].listFiles()){
+					if(subFile.isDirectory()){
+						count += 1;
+					}
+				}
+				if(count != 0){
+					pathTree.nodes = new ArrayList();
+				}
+				pathTree.selectable = true;
+//				pathTree.state.put("checked", false);
+//				pathTree.state.put("disabled", false);
+//				pathTree.state.put("expanded", false);
+//				pathTree.state.put("selected", false);
+				pathTreeList.add(pathTree);
 			}
-			pathTree.text = paths[i].getName();
-			pathTree.href = paths[i].getName();
-			
-			pathTree.selectable = true;
-//			pathTree.state.put("checked", false);
-//			pathTree.state.put("disabled", false);
-//			pathTree.state.put("expanded", false);
-//			pathTree.state.put("selected", false);
-			pathTreeList.add(pathTree);
+
 		}
 		return pathTreeList;
 	}

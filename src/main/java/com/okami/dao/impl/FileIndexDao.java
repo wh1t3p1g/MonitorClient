@@ -251,12 +251,12 @@ public class FileIndexDao implements IFileIndexDao{
 		if (conn != null) {
 			try {
 				conn.close();
+				return true;
 			} catch (SQLException e) {
-				return false;
+				
 			}
 		}
-	
-		return true;
+		return false;
 	}
 
 

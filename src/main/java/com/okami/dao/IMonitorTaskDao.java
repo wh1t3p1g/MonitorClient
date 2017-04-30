@@ -25,6 +25,14 @@ public interface  IMonitorTaskDao {
 	 public MonitorTask queryTaskByTaskName(String taskName) throws Exception ;
 	 
 	 /**
+	  * 删除task通过taskname
+	  * @data 2017年4月23日
+	  * @return
+	  * @throws Exception
+	  */
+	 public boolean deleteTask(String taskName) throws Exception ;
+	 
+	 /**
 	  * 插入Task
 	  * @return
 	  * @throws Exception

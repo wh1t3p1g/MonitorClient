@@ -2,6 +2,8 @@ package com.okami.util;
 
 import org.springframework.stereotype.Component;
 
+import com.okami.core.IOC;
+
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -123,6 +125,27 @@ public class FileUtil {
         }
         return false;
     }
+    
+    /**
+     * 写入文件
+     * @data 2017年4月29日
+     * @param filePath
+     * @param bytes
+     * @return
+     */
+    public static boolean write(String filePath,byte[] bytes){
+    	File file = new File(filePath);
+    	FileOutputStream fos = null;
+    	try {
+    		fos = new FileOutputStream(file);
+			fos.write(bytes);
+			fos.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+    	return true;
+    }
 
     /**
      * 寻找对应的key
@@ -163,6 +186,7 @@ public class FileUtil {
      * @param file
      */
 	public static boolean deleteAll(File file) {
+
 		while(file.exists()){
 			delSub(file);
 		}

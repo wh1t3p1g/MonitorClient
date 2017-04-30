@@ -1,21 +1,20 @@
 package com.okami.common;
 
 import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.util.EntityUtils;
-import org.springframework.context.annotation.Scope;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import com.okami.bean.ConfigBean;
+import com.okami.bean.GlobaVariableBean;
+import com.okami.config.DBConfig;
 import com.okami.core.IOC;
+import com.okami.dao.impl.CacheLogDao;
+import com.okami.entities.CacheLog;
+import com.okami.entities.MonitorTask;
+import com.okami.util.DataUtil;
+import com.okami.util.IniUtil;
 import com.okami.util.WebUtil;
-
 import java.io.File;
-import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,9 +28,17 @@ public class HttpHandler {
 
     private Map<String,String> headers;
 
+    @Autowired
     private ConfigBean configBean;
+    
+    @Autowired
+    private GlobaVariableBean globaVariableBean;
 
     private String RHost;
+    
+    private String hbPostParameters ;
+    
+    private CacheLogDao cacheLogDao ; 
 
     public HttpHandler(){
     	headers = new HashMap<String, String>();
@@ -39,13 +46,22 @@ public class HttpHandler {
     	headers.put("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64; rv:48.0) Gecko/20100101 Firefox/48.0");
     	headers.put("Accept", "*/*");
     	headers.put("Accept-Encoding", "gzip, deflate");
+    	
+		Map<String,String> config = IniUtil.getConfig(System.getProperty("user.dir") + File.separator + "config/config.ini");
+		try {
+			RHost="http://"+config.get("rhost")+":"+config.get("rport");
+	    	hbPostParameters = "ip="+config.get("lhost")+
+					"&port="+config.get("lport")+
+					"&delay="+String.valueOf(Integer.valueOf( config.get("delay")).intValue()/60)+
+					"&storage_path=" + config.get("storagePath") +
+					"&web_root_path=" + config.get("monitorPathList" );
+		} catch (NumberFormatException e) {
+		    IOC.log.error(e.getMessage());
+		}
+		cacheLogDao = new CacheLogDao();
+		cacheLogDao.setDataSource(new DBConfig().dataSource());
+    }
 
-    }
-    
-    public void init(){
-    	configBean = IOC.instance().getClassobj(ConfigBean.class);
-		RHost="http://"+configBean.getRhost()+":"+configBean.getRport();
-    }
     
     /**
      * 发送消息
@@ -75,6 +91,19 @@ public class HttpHandler {
 				RHost+"/Monitor/public/api/messages/add/"+configBean.getLhost(),
 				headers,mgPostParameters);
 		String result = WebUtil.getResponseBody(httpResponse);
+    	if(result==null || result.indexOf("true")<=0){
+    		// 存入数据库
+			try {
+				CacheLog cacheLog = new CacheLog();
+				cacheLog.setTime(time);
+				cacheLog.setType(type);;
+				cacheLog.setEvent(content);
+				cacheLogDao.insertCacheLog(cacheLog);
+			} catch (Exception e) {
+				IOC.log.error(e.getMessage());
+			}
+    		
+   		}
 		return result;
     }
     
@@ -86,14 +115,17 @@ public class HttpHandler {
 	 */
 	public String sendHB(){
 		headers.put("Content-Type", "application/x-www-form-urlencoded");
-		String hbPostParameters =
-				"ip="+configBean.getLhost()+
-				"&port="+configBean.getLport()+
-				"&delay="+String.valueOf(configBean.getDelay()/60)+
-				"&storage_path=" + configBean.getStoragePath();
-		HttpResponse httpResponse =
-					WebUtil.httpPost(RHost+"/Monitor/public/api/heartbeat",
-											headers,hbPostParameters);
+		Map<String,Integer> dataParameters = new HashMap<String, Integer>();
+		try {
+			for(MonitorTask monitorTask:globaVariableBean.getMonitorTaskDao().queryTask()){
+				dataParameters.put(monitorTask.getTaskName(), monitorTask.getStatus());
+			}
+		} catch (Exception e) {
+			IOC.log.error(e.getMessage());
+		}
+		String hbData = hbPostParameters + "&data=" + DataUtil.toJson(dataParameters);
+		HttpResponse httpResponse = WebUtil.httpPost(RHost+"/Monitor/public/api/heartbeat",
+											headers,hbData);
 		String result = WebUtil.getResponseBody(httpResponse);
 		return result;
 	}
@@ -129,6 +161,9 @@ public class HttpHandler {
 			HttpResponse httpResponse = WebUtil.httpGet(RHost+"/Monitor/public/download/"+filename,headers);
 			result = WebUtil.getResponseBodyBytes(httpResponse);
 			i--;
+		}
+		if(result.toString().equals("not found")){
+			return null;
 		}
 
 		return result;
