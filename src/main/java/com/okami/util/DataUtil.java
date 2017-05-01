@@ -4,8 +4,11 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Type;
 import java.math.BigInteger;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.security.MessageDigest;
@@ -22,7 +25,7 @@ import org.apache.commons.io.IOUtils;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-
+import sun.misc.*; 
 /**
  * @author orleven
  * @date 2017年2月25日
@@ -179,5 +182,52 @@ public class DataUtil {
         arrayList.clear(); 
         arrayList.addAll(new HashSet(arrayList)); 
     	return arrayList;
+    }
+    
+    public static String base64Decode(String text)
+    {
+    	byte[] b = null;  
+        String result = null;  
+    	BASE64Decoder decoder = new BASE64Decoder();  
+        try {  
+            b = decoder.decodeBuffer(text);  
+            result = new String(b, "utf-8");  
+        } catch (Exception e) {  
+            e.printStackTrace();  
+        }  
+        return result;
+    }
+    
+    public static String base64Encode(String text)
+    {
+        byte[] b = null;  
+        String s = null;  
+        try {  
+            b = text.getBytes("utf-8");  
+        } catch (UnsupportedEncodingException e) {  
+            e.printStackTrace();  
+        }  
+        if (b != null) {  
+            s = new BASE64Encoder().encode(b);  
+        }   
+        return s;
+    }
+    
+    public static String urlEncode(String text){
+    	try {
+    		text = URLEncoder.encode(text, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}  
+    	return text;
+    }
+    
+    public static String urlDecode(String text){
+    	try {
+    		text = URLDecoder.decode(text, "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+		}  
+    	return text;
     }
 }

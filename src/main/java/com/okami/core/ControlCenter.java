@@ -206,10 +206,11 @@ public class ControlCenter {
 		// 备份模式下删除原来的树
 		if(monitorTask.getBCMode() == 0){
 
-			File bakPath = new File(bakPathStr);
-			if(bakPath.exists()){
-				FileUtil.deleteAll(bakPath);
-			}
+	
+//			File bakPath = new File(bakPathStr);
+//			if(bakPath.exists()){
+//				FileUtil.deleteAll(bakPath);
+//			}
 		}
 		
 		// 自检模式模式下,检查文件树
@@ -263,13 +264,14 @@ public class ControlCenter {
 			} 
 		}
 		
-		// 连接数据库
-		fileIndexDao.setDataSource(new DBConfig().indexDataSource(bakPathStr));
+		// 连接数据库		
 		try {
-			fileIndexDao.connectDB();
+			fileIndexDao.setDataSource(new DBConfig().indexDataSource(bakPathStr));
 		} catch (Exception e) {
+			e.printStackTrace();
 			IOC.log.error(e.getMessage());
 		}
+
 		
 		// 监控线程
 		MonitorThread monitorThread = IOC.instance().getClassobj(MonitorThread.class);
@@ -315,8 +317,6 @@ public class ControlCenter {
 					globaVariableBean.getMonitorTaskDao().updateTask(monitorTaskList.get(i));
 					globaVariableBean.getFileIndexDaoList().get(i).closeConnection();
 					
-					// 测试
-					globaVariableBean.getFileIndexDaoList().get(i).setDataSource(null);
 					
 					// 关闭监控线程
 					globaVariableBean.getMonitorThreadList().get(i).stop();

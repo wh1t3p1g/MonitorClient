@@ -22,9 +22,7 @@ import com.okami.entities.FileIndex;
 @Scope("prototype")
 public class FileIndexDao implements IFileIndexDao{
 	
-	
-	@Autowired
-    private DataSource dataSource;
+	private DataSource dataSource;
     
     private Connection conn;
 
@@ -34,11 +32,28 @@ public class FileIndexDao implements IFileIndexDao{
         this.dataSource = dataSource;
     }
     
-
+    
+    public DataSource getDataSource() {
+        return this.dataSource ;
+    }
+    
+    public void checkConnect(){
+    	
+    	try {
+			if(conn==null){
+				conn = dataSource.getConnection();
+			}
+		} catch (SQLException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	
+    }
     
 	@Override
 	public List<FileIndex> queryIndex() throws Exception {
-		 
+		checkConnect();
+		
 		String sql = "Select * from FileIndex";
 	    Statement smt = conn.createStatement();
 
@@ -66,6 +81,8 @@ public class FileIndexDao implements IFileIndexDao{
 
 	@Override
 	public boolean insertIndex(FileIndex fileIndex) throws Exception {
+		checkConnect();
+		
 		String sql = "INSERT INTO FileIndex " +
 				"(Path,Sha1,Size,Type,Time,Owner,OwnerGroup,Status,Read,Write,Exec,RarId) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 //		Connection conn = null;
@@ -102,6 +119,8 @@ public class FileIndexDao implements IFileIndexDao{
 
 	@Override
 	public boolean insertIndex(List<FileIndex> fileIndexList) throws Exception {
+		checkConnect();
+		
 		String sql = "INSERT INTO FileIndex " +
 				"(Path,Sha1,Size,Type,Time,Owner,OwnerGroup,Status,Read,Write,Exec,Rarid) VALUES ( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 //		Connection conn = null;
@@ -140,6 +159,8 @@ public class FileIndexDao implements IFileIndexDao{
 	
 	@Override
 	public boolean updateIndex(FileIndex fileIndex) throws Exception {
+		checkConnect();
+		
 		String sql = "UPDATE FileIndex SET Sha1=?,Size=?,Type=?,Time=?,Owner=?,Group=?,Status=? ,Read=?,Write=?,Exec=?,RarId=? WHERE Path = ?";
 //		Connection conn = null;
 		
@@ -175,6 +196,8 @@ public class FileIndexDao implements IFileIndexDao{
 
 	@Override
 	public boolean deleteIndex(FileIndex fileIndex) throws Exception {
+		checkConnect();
+		
 		String sql = "DELETE FROM FileIndex WHERE Path = ?";
 //		Connection conn = null;
 		
@@ -199,6 +222,8 @@ public class FileIndexDao implements IFileIndexDao{
 
 	@Override
 	public boolean createTable() throws Exception {
+		checkConnect();
+		
 		String sql = "CREATE TABLE 'FileIndex' ("
 				+ "'Id'  INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,"
 				+ "'Path'  TEXT NOT NULL,"
@@ -263,6 +288,8 @@ public class FileIndexDao implements IFileIndexDao{
 
 	@Override
 	public List<FileIndex> queryIndexByPath(String pathname) throws Exception {
+		checkConnect();
+		
 		String sql = "Select * from FileIndex where Path = ?";
 		PreparedStatement ps = conn.prepareStatement(sql);
 		ps.setString(1, pathname);
@@ -294,7 +321,7 @@ public class FileIndexDao implements IFileIndexDao{
 
 	@Override
 	public List<FileIndex> queryIndexLikePath(String pathname) throws Exception {
-
+		checkConnect();
 		String sql = "Select * from FileIndex where Path like ?";
 		PreparedStatement ps = conn.prepareStatement(sql);
 		ps.setString(1, pathname+"%");
@@ -326,6 +353,7 @@ public class FileIndexDao implements IFileIndexDao{
 
 	@Override
 	public boolean deleteIndexLikePath(String pathname) throws Exception {
+		checkConnect();
 		String sql = "DELETE FROM FileIndex WHERE Path Like ?";
 		PreparedStatement ps = conn.prepareStatement(sql);
 		ps.setString(1, pathname+"%");
@@ -338,6 +366,7 @@ public class FileIndexDao implements IFileIndexDao{
 
 	@Override
 	public FileIndex queryOneIndexByPath(String pathname) throws Exception {
+		checkConnect();
 		String sql = "Select * from FileIndex where Path = ?";
 		PreparedStatement ps = conn.prepareStatement(sql);
 		ps.setString(1, pathname);
@@ -362,6 +391,52 @@ public class FileIndexDao implements IFileIndexDao{
 		rs.close();
 		ps.close();
 		return fileIndex;
+	}
+
+
+
+	@Override
+	public boolean isTableExist() throws Exception {
+		checkConnect();
+		boolean flag = false;
+		try {
+			String sql = "select * from sqlite_master where type = 'table' and name = 'FileIndex'";
+
+			PreparedStatement ps = conn.prepareStatement(sql);
+			
+			ResultSet rs = ps.executeQuery();
+			if (rs.next()) {
+				flag = true;
+			}
+			rs.close();
+			ps.close();
+		}catch (SQLException e) {
+			return false;
+//			throw new RuntimeException(e);
+		}
+//		finally {
+//			if (conn != null) {
+//				try {
+//					conn.close();
+//				} catch (SQLException e) {}
+//			}
+//		}
+		return flag;
+	}
+
+
+	@Override
+	public boolean deleteAll() throws Exception {
+		checkConnect();
+		
+		String sql = "delete from FileIndex";
+
+		PreparedStatement ps = conn.prepareStatement(sql);
+		ps.executeUpdate();
+		ps.close();
+			
+		return true;
+
 	}
 
 }

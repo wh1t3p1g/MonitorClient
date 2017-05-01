@@ -81,7 +81,7 @@ public class IniUtil {
 			ini.add("Remote", "Remote Host",config.get("rhost"));
 			ini.add("Remote", "Remote Port",config.get("rport"));
 			ini.add("Remote", "HeartBeat Delay",config.get("delay"));
-			ini.putComment("Storage", "To avoid unnecessary coding problems, please use the English name of the directory. \r\nMainly used for backup files, log files and cache file storage.\r\n");
+			ini.putComment("Storage", "To avoid unnecessary coding problems, please use the English name of the directory. \r\nMainly used for backup files, log files and cache file storage.\r\n e.g. C:\\Users\\dell\\Desktop\\MonitorC_Backup");
 			ini.add("Storage", "Storage Path",config.get("storagePath"));
 			ini.putComment("Monitor", "To avoid unnecessary coding problems, please use the English name of the directory. \r\nThis configuration is sent to the server to set up the monitoring directory. \r\n e.g. C:\\Soft\\xampp\\htdocs,C:\\Users\\dell\\Desktop\\test \r\n");
 			ini.add("Monitor", "Monitor Path List",config.get("monitorPathList"));	

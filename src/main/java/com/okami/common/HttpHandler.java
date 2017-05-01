@@ -72,7 +72,7 @@ public class HttpHandler {
      * @return
      */
     public String sendMessage(String postParameters){
-		headers.put("Content-Type", "application/x-www-form-urlencoded");
+		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
 		HttpResponse httpResponse = WebUtil.httpPost(RHost+"/Monitor/public/api/messages/scan/"+configBean.getLhost(),headers,postParameters);
 		String result = WebUtil.getResponseBody(httpResponse);
 		return result;
@@ -87,8 +87,8 @@ public class HttpHandler {
      * @return
      */
     public String sendMonitorEvent(String time,String type,String content){
-		headers.put("Content-Type", "application/x-www-form-urlencoded");
-		String mgPostParameters = "type=" + type + "&time=" +time+"&content=" + content;
+		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
+		String mgPostParameters = "type=" + type + "&time=" +time+"&content=" + DataUtil.urlEncode(content);
 		HttpResponse httpResponse = WebUtil.httpPost(
 				RHost+"/Monitor/public/api/messages/add/"+configBean.getLhost(),
 				headers,mgPostParameters);
@@ -116,7 +116,7 @@ public class HttpHandler {
 	 * @return
 	 */
 	public String sendHB(){
-		headers.put("Content-Type", "application/x-www-form-urlencoded");
+		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
 		Map<String,Integer> dataParameters = new HashMap<String, Integer>();
 		try {
 			for(MonitorTask monitorTask:globaVariableBean.getMonitorTaskDao().queryTask()){
@@ -155,7 +155,7 @@ public class HttpHandler {
 	 * @return
 	 */
 	public String uploadSuspiciousFile(File file){
-		headers.put("Content-Type", "application/x-www-form-urlencoded");
+		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
 		HttpResponse httpResponse =
 				WebUtil.httpPost(
 						RHost+"/Monitor/public/upload/up",
@@ -172,7 +172,7 @@ public class HttpHandler {
 	 * @return
 	 */
 	public byte[] download(String filename){
-		headers.put("Content-Type", "application/x-www-form-urlencoded");
+		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
 		byte[] result = null;
 		int i=3;
 		while(i>0&&result==null){

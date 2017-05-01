@@ -10,6 +10,8 @@ import com.okami.plugin.scanner.core.common.EnumFiles;
 import com.okami.plugin.scanner.core.trainer.GenerateArff;
 import com.okami.plugin.scanner.core.trainer.NavieBayesClassifier;
 import com.okami.plugin.scanner.core.trainer.TrainerDataSet;
+import com.okami.util.FileUtil;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -100,5 +102,23 @@ public class WebshellController {
         NavieBayesClassifier navieBayesClassifier=
                 MonitorClientApplication.ctx.getBean(NavieBayesClassifier.class);
         return "";
+    }
+    
+
+    @RequestMapping(value="/webshell/addConfig",method=RequestMethod.POST)
+    public String addConfig(HttpServletRequest request){
+        String session = request.getParameter("session");
+        String name = request.getParameter("name");
+        String value = request.getParameter("value");
+        WebshellFeatures webshellFeatures= MonitorClientApplication.ctx.getBean(WebshellFeatures.class);
+        if(webshellFeatures.add(session, name, value)){
+        	return "success";
+        }
+        return "failed";
+    }
+    
+    @RequestMapping(value="/webshell/getConfig",method=RequestMethod.GET)
+    public String getConfig(){
+        return FileUtil.readAll("config/webshellFeatures.ini","UTF-8");
     }
 }
