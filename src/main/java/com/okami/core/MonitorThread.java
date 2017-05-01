@@ -89,7 +89,7 @@ public class MonitorThread {
         this.name = name;
     }
 
-    public void start() {  
+    public boolean start() {  
         int mask = JNotify.FILE_CREATED | JNotify.FILE_DELETED | JNotify.FILE_MODIFIED | JNotify.FILE_RENAMED;  
         boolean watchSubtree = true;  
         try {  
@@ -110,9 +110,10 @@ public class MonitorThread {
             
             watchID = JNotify.addWatch(monitorTask.getMonitorPath(), mask, watchSubtree, this.listener);  
             this.state = 1;
-            
+            return true;
         } catch (Exception e) {  
         	IOC.log.error(e.getMessage());
+        	return false;
         }  
     }  
     
@@ -290,31 +291,30 @@ public class MonitorThread {
             if(mode.equals("Safe")){
                 boolean whiteFlag = false;
                 boolean blackFlag = false;
+                String parentPath = filename.substring(0,filename.lastIndexOf(File.separator));
                 for(int i=0;i<whiteList.length;i++){
-                    if(filename.length()>whiteList[i].length()){
-                        if(filename.indexOf(whiteList[i]) >= 0){
-                            // 白名单
-                            whiteFlag = true;
-                            String name = filename.substring(filename.lastIndexOf(File.separator));
-                            if(name.indexOf(".")>=0){
-                                String suffix = name.substring(name.indexOf(".")+1).toLowerCase();
-                                for(int j=0;j<blackList.length;j++){
-                                    // 黑名单
-                                    if(suffix.indexOf(blackList[j].toLowerCase())>=0){
-                                        blackFlag = true;
-                                        repaire(time,action,filename );
-                                        break;
-                                    }
+                	if(parentPath.indexOf(whiteList[i]) == 0){  // 不应该大于0
+                        // 白名单
+                        whiteFlag = true;
+                        String name = filename.substring(filename.lastIndexOf(File.separator));
+                        if(name.indexOf(".")>=0){
+                            String suffix = name.substring(name.indexOf(".")+1).toLowerCase();
+                            for(int j=0;j<blackList.length;j++){
+                                // 黑名单
+                                if(suffix.indexOf(blackList[j].toLowerCase())>=0){
+                                    blackFlag = true;
+                                    repaire(time,action,filename );
+                                    break;
                                 }
                             }
-
-                            // 不在黑名单，即白名单里面
-                            if(!blackFlag||whiteFlag){
-                                qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-                                IOC.log.warn(action + ": " + filename);
-                            }
-                            break;
                         }
+
+                        // 不在黑名单，即白名单里面
+                        if(!blackFlag||whiteFlag){
+                            qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+                            IOC.log.warn(action + ": " + filename);
+                        }
+                        break;
                     }
                 }
                 

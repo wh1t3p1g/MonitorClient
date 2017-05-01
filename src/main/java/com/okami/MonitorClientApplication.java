@@ -25,7 +25,7 @@ public class MonitorClientApplication extends SpringBootServletInitializer imple
 	public static void main(String[] args) {	
 		IOC.log=log;
 		ctx  = SpringApplication.run(MonitorClientApplication.class, args);
-		IOC.ctx=ctx;
+		IOC.ctx = ctx;
 		ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
 		controlCenter.init();
         controlCenter.audoLoad();

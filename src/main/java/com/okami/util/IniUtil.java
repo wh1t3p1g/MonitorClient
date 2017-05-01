@@ -111,4 +111,18 @@ public class IniUtil {
 		}  
 		return "61234";
 	}
+	
+	public static boolean setDelay(int delay,String iniPath){
+        Wini ini;
+		try {
+			ini = new Wini(new File(iniPath));
+			ini.add("Remote", "HeartBeat Delay",delay);
+			ini.store();
+		} catch (InvalidFileFormatException e) {
+			return false;
+		} catch (IOException e) {
+			return false;
+		}  
+		return true;
+	}
 }
