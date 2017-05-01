@@ -32,7 +32,6 @@ public class StaticScanner extends AbstractScanner{
         Map<String,String> retData=new HashMap<>();
         List<FileContent> fileContents=getTask().getFileContents();
         for (FileContent fileContent:fileContents){
-            MonitorClientApplication.log.info("start checking "+fileContent.getFilePath());
             String content= FileUtil.readAll(fileContent.getFilePath());
             String result=regexEvilWords.calculate(content);
             if(!result.equals("false")){

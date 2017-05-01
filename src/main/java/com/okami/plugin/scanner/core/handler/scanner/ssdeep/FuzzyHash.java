@@ -40,7 +40,6 @@ public class FuzzyHash {
         if(webshellFeatures!=null){
             this.features=webshellFeatures.load("FuzzHash");
             MonitorClientApplication.log.info("WebshellFeature<FuzzHash> load success");
-
         }
         else
             MonitorClientApplication.log.error("WebshellFeature<FuzzHash> load error");
@@ -79,7 +78,7 @@ public class FuzzyHash {
         for(Map.Entry<String, String> entry : this.features.entrySet()) {
             num=this.spamSum.match(hash,entry.getValue());
             if(num>this.threshold){
-                return entry.getKey()+"|"+entry.getValue()+"|"+num;
+                return entry.getKey()+"("+num+"%)";
             }
         }
         return "false";

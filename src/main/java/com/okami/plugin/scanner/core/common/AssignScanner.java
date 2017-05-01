@@ -36,6 +36,7 @@ public class AssignScanner {
 
     public int assignTask(){
         String data=null;
+        MonitorClientApplication.log.info("Scan Start");
         switch (task.getType()){
             case 1://仅选择fuzzyhash scan + 所有文件（不包括指定的排除文件）扫描
                 // load fuzzy hash scan
@@ -46,7 +47,6 @@ public class AssignScanner {
                         "FuzzHash Scan Finished, Found "+task.getFuzzHashScanResults().size()
                                 +" evil file");
                 System.out.println(task.getFuzzHashScanResults().toString());
-                //todo
                 data="data="+DataUtil.urlEncode(DataUtil.toJson(task.getFuzzHashScanResults()))
                                 +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
                                 +"&size="+task.getFuzzHashScanResults().size();

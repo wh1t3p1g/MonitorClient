@@ -39,12 +39,10 @@ public class StatisticsScanner extends AbstractScanner{
         Map<String,String> retData=new HashMap<>();
         List<FileContent> fileContents=getTask().getFileContents();
         for(FileContent fileContent:fileContents){
-            MonitorClientApplication.log.info(
-                    "start check encrypt: "+fileContent.getFilePath()+" ,size "+fileContent.getSize());
             TrainerDataSet trainerDataSet=generateArff.generateTrainerDataSet(fileContent);
             double[] result=navieBayesClassifier.prediction(trainerDataSet);
             if(result[0]>result[1])
-                retData.put(fileContent.getFilePath(),Double.toString(result[0]));
+                retData.put(fileContent.getFilePath(),"ML:("+Double.toString(result[0]*100)+"%)");
         }
         return retData;
     }
@@ -53,7 +51,7 @@ public class StatisticsScanner extends AbstractScanner{
         TrainerDataSet trainerDataSet=generateArff.generateTrainerDataSet(fileContent);
         double[] result=navieBayesClassifier.prediction(trainerDataSet);
         if(result[0]>result[1])
-            return Double.toString(result[0]);
+            return "ML:("+Double.toString(result[0]*100)+"%)";
         else
             return "false";
     }
