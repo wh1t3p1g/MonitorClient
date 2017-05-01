@@ -1,12 +1,14 @@
 package com.okami.plugin.scanner.core.common;
 
 import com.okami.MonitorClientApplication;
+import com.okami.common.HttpHandler;
 import com.okami.plugin.scanner.bean.BaseTask;
 import com.okami.plugin.scanner.bean.FileContent;
 import com.okami.plugin.scanner.core.scanner.impl.FullScanner;
 import com.okami.plugin.scanner.core.scanner.impl.FuzzyHashScanner;
 import com.okami.plugin.scanner.core.scanner.impl.StaticScanner;
 import com.okami.plugin.scanner.core.scanner.impl.StatisticsScanner;
+import com.okami.util.DataUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -29,7 +31,11 @@ public class AssignScanner {
     private StatisticsScanner statisticsScanner;
     private FullScanner fullScanner;
 
+    @Autowired
+    private HttpHandler httpHandler;
+
     public int assignTask(){
+        String data=null;
         switch (task.getType()){
             case 1://仅选择fuzzyhash scan + 所有文件（不包括指定的排除文件）扫描
                 // load fuzzy hash scan
@@ -40,6 +46,11 @@ public class AssignScanner {
                         "FuzzHash Scan Finished, Found "+task.getFuzzHashScanResults().size()
                                 +" evil file");
                 System.out.println(task.getFuzzHashScanResults().toString());
+                //todo
+                data="data="+DataUtil.toJson(task.getFuzzHashScanResults())
+                                +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
+                                +"&size="+task.getFuzzHashScanResults().size();
+                httpHandler.sendMessage(data);
                 break;
             case 2://仅选择static scan + 所有文件（不包括指定的排除文件）扫描
                 // load static scan
@@ -50,6 +61,10 @@ public class AssignScanner {
                         "Static Scan Finished, Found "+task.getStaticScanResults().size()
                                 +" evil file");
                 System.out.println(task.getStaticScanResults().toString());
+                data="data="+DataUtil.toJson(task.getStaticScanResults())
+                        +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
+                        +"&size="+task.getStaticScanResults().size();
+                httpHandler.sendMessage(data);
                 break;
             case 3://仅选择statistics scan + 所有文件（不包括指定的排除文件）扫描
                 // load statistic scan
@@ -60,6 +75,10 @@ public class AssignScanner {
                         "Statistic Scan Finished, Found "+task.getStatisticsScanResults().size()
                                 +" evil file");
                 System.out.println(task.getStatisticsScanResults().toString());
+                data="data="+DataUtil.toJson(task.getStatisticsScanResults())
+                        +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
+                        +"&size="+task.getStatisticsScanResults().size();
+                httpHandler.sendMessage(data);
                 break;
             default://选择3种扫描算法 + (指定|所有)文件扫描 => fast/full mode 常用方式
                 fullScanner=MonitorClientApplication.ctx.getBean(FullScanner.class);
@@ -70,6 +89,10 @@ public class AssignScanner {
                                 (task.getFullScanResults().size())
                                 +" evil file");
                 System.out.println(task.getFullScanResults());
+                data="data="+DataUtil.toJson(task.getFullScanResults())
+                        +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
+                        +"&size="+task.getFullScanResults().size();
+                httpHandler.sendMessage(data);
                 break;
         }
         return 0;

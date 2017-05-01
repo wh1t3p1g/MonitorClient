@@ -16,3 +16,5 @@ MonitorClient.userlibraries
 .classpath
 .project
 log/
+storage/
+config/config.db

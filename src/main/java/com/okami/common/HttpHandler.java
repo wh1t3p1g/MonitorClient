@@ -73,8 +73,7 @@ public class HttpHandler {
      */
     public String sendMessage(String postParameters){
 		headers.put("Content-Type", "application/x-www-form-urlencoded");
-		HttpResponse httpResponse = WebUtil.httpPost(RHost+"/Monitor/public/api/messages/add/"+
-				configBean.getLhost(),headers,postParameters);
+		HttpResponse httpResponse = WebUtil.httpPost(RHost+"/Monitor/public/api/messages/scan/"+configBean.getLhost(),headers,postParameters);
 		String result = WebUtil.getResponseBody(httpResponse);
 		return result;
     }
