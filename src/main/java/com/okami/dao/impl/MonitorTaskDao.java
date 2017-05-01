@@ -59,7 +59,8 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 		    	String remark = rs.getString("Remark");
 		    	String maxSize = rs.getString("MaxSize");
 		    	int status = rs.getInt("Status");
-		    	MonitorTask task = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize,status);
+		    	int upload = rs.getInt("Upload");
+		    	MonitorTask task = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize,status,upload);
 		    	list.add(task);
 		    }
 		} catch (SQLException e) {
@@ -78,7 +79,7 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 	@Override
 	public boolean insertTask(MonitorTask monitorTask) throws Exception {
 		String sql = "INSERT INTO MonitorTask " +
-				"(TaskName,ProjectName,MonitorPath,WhiteList,BlackList,FlagName,RunMode,BCMode,Remark,MaxSize,Status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+				"(TaskName,ProjectName,MonitorPath,WhiteList,BlackList,FlagName,RunMode,BCMode,Remark,MaxSize,Status,Upload) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 		Connection conn = null;
 		
 		try {
@@ -95,6 +96,7 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 			ps.setString(9, monitorTask.getRemark());
 			ps.setString(10, monitorTask.getMaxSize());
 			ps.setInt(11, monitorTask.getStatus());
+			ps.setInt(12, monitorTask.getUpload());
 			ps.executeUpdate();
 			ps.close();
 			
@@ -113,7 +115,7 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 
 	@Override
 	public boolean updateTask(MonitorTask monitorTask) throws Exception {
-		String sql = "UPDATE MonitorTask SET ProjectName=?,MonitorPath=?,WhiteList=?,BlackList=?,FlagName=?,RunMode=?,BCMode=?,Remark=?,MaxSize=?,Status=? WHERE TaskName = ?";
+		String sql = "UPDATE MonitorTask SET ProjectName=?,MonitorPath=?,WhiteList=?,BlackList=?,FlagName=?,RunMode=?,BCMode=?,Remark=?,MaxSize=?,Status=?,Upload=? WHERE TaskName = ?";
 		Connection conn = null;
 		
 		try {
@@ -129,7 +131,8 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 			ps.setString(8, monitorTask.getRemark());
 			ps.setString(9, monitorTask.getMaxSize());
 			ps.setInt(10, monitorTask.getStatus());
-			ps.setString(11, monitorTask.getTaskName());
+			ps.setInt(11, monitorTask.getUpload());
+			ps.setString(12, monitorTask.getTaskName());
 
 			ps.executeUpdate();
 			ps.close();
@@ -171,7 +174,8 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 		    	String remark = rs.getString("Remark");
 		    	String maxSize = rs.getString("MaxSize");
 		    	int status = rs.getInt("Status");
-		    	monitorTask = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize,status);
+		    	int upload = rs.getInt("Upload");
+		    	monitorTask = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize,status,upload);
 			}
 			rs.close();
 			ps.close();
@@ -204,6 +208,7 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 					+ "'Remark'  TEXT,"
 					+ "'MaxSize'  TEXT,"
 					+ "'Status'  INTEGER,"
+					+ "'Upload'  INTEGER,"
 					+ "PRIMARY KEY ('TaskId' ASC)"
 					+ ")";
 					

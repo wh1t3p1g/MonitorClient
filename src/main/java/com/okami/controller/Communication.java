@@ -76,11 +76,16 @@ public class Communication {
     public String getSuspiciousFile(HttpServletRequest request){
     	String indexPath = request.getParameter("filepath");
     	indexPath = DataUtil.urlDecode(indexPath);
+    	if(File.separator.equals("\\")){
+    		indexPath = indexPath.replaceAll("/", "\\\\");
+    	}else{
+    		indexPath = indexPath.replaceAll("\\\\", "/");
+    	}
 		File file = new File(indexPath);
 		if(!file.exists()){
 			return DataUtil.toJson(returnMessage(-11,"Get Suspicious File: "+indexPath));
 		}
-    	IOC.log.warn("Get Suspicious File: "+indexPath);
+    	IOC.log.warn("Mission Success(Get Suspicious File: "+indexPath+"): Deal Mission Sucess!");
     	return FileUtil.readAll(indexPath,"UTF-8");
     }
 
@@ -95,11 +100,17 @@ public class Communication {
     public String getSuspiciousFileSHA1(HttpServletRequest request){
     	String indexPath = request.getParameter("filepath");
     	indexPath = DataUtil.urlDecode(indexPath);
+    	if(File.separator.equals("\\")){
+    		indexPath = indexPath.replaceAll("/", "\\\\");
+    	}else{
+    		indexPath = indexPath.replaceAll("\\\\", "/");
+    	}
 		File file = new File(indexPath);
 		if(!file.exists()){
 			return DataUtil.toJson(returnMessage(-11,"Get Suspicious File SHA1: "+indexPath));
 		}
-    	IOC.log.warn("Get Suspicious File SHA1: "+indexPath);
+		
+    	IOC.log.warn("Mission Success(Get Suspicious File SHA1:"+indexPath+"): Deal Mission Sucess!");
     	return DataUtil.getSHA1ByFile(file);
     }
 
@@ -113,6 +124,11 @@ public class Communication {
     public String removeFile(HttpServletRequest request){
     	String indexPath = request.getParameter("indexPath");
     	indexPath = DataUtil.urlDecode(indexPath);
+    	if(File.separator.equals("\\")){
+    		indexPath = indexPath.replaceAll("/", "\\\\");
+    	}else{
+    		indexPath = indexPath.replaceAll("\\\\", "/");
+    	}
     	RepaireThread repaireThread = IOC.instance().getClassobj(RepaireThread.class);
         if(repaireThread.remove(indexPath))
         {
@@ -131,9 +147,15 @@ public class Communication {
     public String editFile(HttpServletRequest request){
     	String indexPath = request.getParameter("indexPath");
     	indexPath = DataUtil.urlDecode(indexPath);
-    	String fileName = request.getParameter("fileName");
-    	fileName = DataUtil.urlDecode(fileName);
-    	byte[] contentBytes = request.getParameter("content").getBytes();   // 暂定
+    	if(File.separator.equals("\\")){
+    		indexPath = indexPath.replaceAll("/", "\\\\");
+    	}else{
+    		indexPath = indexPath.replaceAll("\\\\", "/");
+    	}
+    	
+    	String fileName = indexPath.substring(indexPath.lastIndexOf(File.separator));
+
+    	byte[] contentBytes = DataUtil.urlDecode(request.getParameter("content")).getBytes();   // 暂定
   
     	
     	// 先放入缓存文件中
@@ -144,6 +166,7 @@ public class Communication {
     		FileUtil.deleteAll(file);
     	}
 		FileUtil.write(cachFileStr, contentBytes);
+		
 
     	RepaireThread repaireThread = IOC.instance().getClassobj(RepaireThread.class);
     	if(repaireThread.edit(indexPath,cachFileStr))
@@ -267,6 +290,7 @@ public class Communication {
         	monitorTask.setBCMode(0);
         	monitorTask.setRunMode(RunMode);
         	monitorTask.setStatus(0);
+        	monitorTask.setUpload(0);
 			monitorTaskDao.insertTask(monitorTask);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -332,6 +356,7 @@ public class Communication {
 		        	monitorTask.setMaxSize("2097152");
 		        	monitorTask.setBCMode(0);
 		        	monitorTask.setStatus(0);
+		        	monitorTask.setUpload(0);
 		        	monitorTask.setRunMode(RunMode);					
 					monitorTaskDao.updateTask(monitorTask);
 					
@@ -373,6 +398,7 @@ public class Communication {
 				if(monitorTask.getTaskName().equals(taskName)){
 					// 以备份模式  测试
 					monitorTask.setBCMode(0);
+					monitorTask.setUpload(0);
 					monitorTaskDao.updateTask(monitorTask);
 			    	
 					ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);

@@ -59,6 +59,24 @@ public class WebshellFeatures {
 		}  
        return true;
     }
+    
+    /**
+     * 添加一条配置
+     * @data 2017年5月1日
+     * @param configName
+     * @return
+     */
+    public boolean remove(String session,String name,String value){
+		try {
+			ini.remove(name);
+			ini.store();
+		} catch (InvalidFileFormatException e) {
+			return false;
+		} catch (IOException e) {
+			return false;
+		}  
+       return true;
+    }
    
 
 }

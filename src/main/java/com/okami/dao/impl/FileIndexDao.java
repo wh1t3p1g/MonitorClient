@@ -161,7 +161,7 @@ public class FileIndexDao implements IFileIndexDao{
 	public boolean updateIndex(FileIndex fileIndex) throws Exception {
 		checkConnect();
 		
-		String sql = "UPDATE FileIndex SET Sha1=?,Size=?,Type=?,Time=?,Owner=?,Group=?,Status=? ,Read=?,Write=?,Exec=?,RarId=? WHERE Path = ?";
+		String sql = "UPDATE FileIndex SET Sha1=?,Size=?,Type=?,Time=?,Owner=?,OwnerGroup=?,Status=? ,Read=?,Write=?,Exec=?,RarId=? WHERE Path = ?";
 //		Connection conn = null;
 		
 //		try {
@@ -174,11 +174,11 @@ public class FileIndexDao implements IFileIndexDao{
 			ps.setString(5,  fileIndex.getOwner());
 			ps.setString(6,  fileIndex.getOwnerGroup());
 			ps.setInt(7,  fileIndex.getStatus());
-			ps.setString(8, fileIndex.getPath());
-			ps.setInt(9,  fileIndex.getRead());
-			ps.setInt(10,  fileIndex.getWrite());
-			ps.setInt(11,  fileIndex.getExec());
+			ps.setInt(8,  fileIndex.getRead());
+			ps.setInt(9,  fileIndex.getWrite());
+			ps.setInt(10,  fileIndex.getExec());
 			ps.setInt(11,  fileIndex.getRarId());
+			ps.setString(12, fileIndex.getPath());
 			ps.executeUpdate();
 			ps.close();
 			
@@ -437,6 +437,20 @@ public class FileIndexDao implements IFileIndexDao{
 			
 		return true;
 
+	}
+
+
+	@Override
+	public boolean deleteTable() throws Exception {
+		checkConnect();
+		
+		String sql = "DROP TABLE FileIndex;";
+
+		PreparedStatement ps = conn.prepareStatement(sql);
+		ps.executeUpdate();
+		ps.close();
+			
+		return true;
 	}
 
 }

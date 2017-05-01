@@ -1,10 +1,6 @@
 package com.okami.core;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 import java.util.Queue;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +32,7 @@ public class RepaireThread extends Thread{
 
 	
 	@Autowired
-	GlobaVariableBean globaVariableBean;
+	private GlobaVariableBean globaVariableBean;
 
 	/**
 	 * 初始化
@@ -148,6 +144,9 @@ public class RepaireThread extends Thread{
 							File file = new File(monitorTask.getMonitorPath()+fileIndex.getPath());
 							while(!file.exists()){
 								file.mkdirs();
+								file.setExecutable(fileIndex.getExec()==1);
+								file.setReadable(fileIndex.getRead()==1);
+								file.setReadable(fileIndex.getRead()==1);
 							}						
 						}
 						
@@ -164,7 +163,10 @@ public class RepaireThread extends Thread{
 							String bakname = this.bakPath + File.separator + monitorTask.getTaskName() + File.separator + fileIndex.getSha1().substring(0,2);
 							bakname = bakname + File.separator + fileIndex.getSha1().substring(2);
 							byte[] contentBytes = ZLibUtil.decompress(FileUtil.readByte(bakname));
-							FileUtil.write(monitorTask.getMonitorPath()+fileIndex.getPath(), contentBytes);							
+							FileUtil.write(monitorTask.getMonitorPath()+fileIndex.getPath(), contentBytes);		
+							file.setExecutable(fileIndex.getExec()==1);
+							file.setReadable(fileIndex.getRead()==1);
+							file.setReadable(fileIndex.getRead()==1);
 						}
 					}
 					
@@ -192,20 +194,26 @@ public class RepaireThread extends Thread{
 			for(MonitorTask mTask:globaVariableBean.getMonitorTaskDao().queryTask()){
 				if(indexPath.indexOf(mTask.getMonitorPath())==0){
 					monitorTask = mTask;
+
 				}
 			}
 			File webFile = new File(indexPath);
 			if(monitorTask==null){
 				FileUtil.deleteAll(webFile);
 			}else{
+				monitorTask.setUpload(0);
+				globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
+				
 				
 				String bakPathStr = configBean.getBakPath()+File.separator+monitorTask.getFlagName();
 				FileIndexDao fileIndexDao = new FileIndexDao();
 				fileIndexDao.setDataSource(new DBConfig().indexDataSource(bakPathStr));
 				fileIndexDao.connectDB();
 				
+				String flagIndexPath = indexPath.substring(monitorTask.getMonitorPath().length()); 
+				
 				// 移除文件
-				for(FileIndex fileIndex:fileIndexDao.queryIndexLikePath(indexPath)){
+				for(FileIndex fileIndex:fileIndexDao.queryIndexLikePath(flagIndexPath)){
 					// 如果是文件，则删除备份
 					if(fileIndex.getType().equals("File")){
 						String bakname = this.bakPath + File.separator + monitorTask.getTaskName() + File.separator + 
@@ -219,7 +227,7 @@ public class RepaireThread extends Thread{
 				}
 				
 				// 删除数据库中对应的行
-				fileIndexDao.deleteIndexLikePath(indexPath.substring(monitorTask.getMonitorPath().length()));
+				fileIndexDao.deleteIndexLikePath(flagIndexPath);
 				
 				
 				// 删除网站源文件
@@ -234,6 +242,10 @@ public class RepaireThread extends Thread{
 				{
 					return false;
 				}
+				
+				monitorTask.setUpload(1);
+				globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
+				
 			}
 		
 		} catch (Exception e1) {
@@ -253,6 +265,7 @@ public class RepaireThread extends Thread{
 	 */
 	public boolean edit(String indexPath,String cachFileStr){
 		MonitorTask monitorTask = null;
+		File tarCachFile = new File(cachFileStr); 
 		try {
 			for(MonitorTask mTask:globaVariableBean.getMonitorTaskDao().queryTask()){
 				if(indexPath.indexOf(mTask.getMonitorPath())==0){
@@ -263,32 +276,41 @@ public class RepaireThread extends Thread{
 				FileUtil.write(indexPath, FileUtil.readByte(cachFileStr));
 				
 			}else{
+				monitorTask.setUpload(0);
+				globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
+				
 				String bakPathStr = configBean.getBakPath()+File.separator+monitorTask.getFlagName();
 				FileIndexDao fileIndexDao = new FileIndexDao();
 				fileIndexDao.setDataSource(new DBConfig().indexDataSource(bakPathStr));
 				fileIndexDao.connectDB();
 				
-				List<FileIndex> fileIndexs = fileIndexDao.queryIndexByPath(indexPath);
+				List<FileIndex> fileIndexs = fileIndexDao.queryIndexByPath(indexPath.substring(monitorTask.getMonitorPath().length()));
 				if(fileIndexs.size()>=1){
-					// 删除原始备份文件
+					
+					// 添加备份文件
+					String tarSHA1 = DataUtil.getSHA1ByFile(tarCachFile);
 					String srcSHA1 = fileIndexs.get(0).getSha1();
+		        	byte[] contentBytes = ZLibUtil.compress(FileUtil.readByte(cachFileStr));
+		        	String bakFold = configBean.getBakPath()+File.separator+monitorTask.getTaskName()+
+							File.separator+tarSHA1.substring(0,2);
+		        	File file = new File(bakFold);
+		        	if(!file.exists())
+		        	{
+		        		file.mkdirs();
+		        	}
+		       
+					FileUtil.write(bakFold+File.separator+tarSHA1.substring(2), contentBytes);
+					
+					// 更新数据库
+					fileIndexs.get(0).setSha1(tarSHA1);
+					fileIndexDao.updateIndex(fileIndexs.get(0));
+					
+					// 删除原始备份文件
 					File srcBakFile = new File(configBean.getBakPath()+File.separator+monitorTask.getTaskName()+
 							File.separator+srcSHA1.substring(0,2)+File.separator+srcSHA1.substring(2));
 					if(srcBakFile.exists()){
 						FileUtil.deleteAll(srcBakFile);
 					}
-					
-					// 添加备份文件
-					File tarCachFile = new File(cachFileStr); 
-					String tarSha1 = DataUtil.getSHA1ByFile(tarCachFile);
-		        	byte[] contentBytes = ZLibUtil.compress(FileUtil.readByte(cachFileStr));
-					FileUtil.write(configBean.getBakPath()+File.separator+monitorTask.getTaskName()+
-							File.separator+tarSha1.substring(0,2)+File.separator+tarSha1.substring(2), contentBytes);
-					
-					
-					// 更新数据库
-					fileIndexs.get(0).setSha1(tarSha1);
-					fileIndexDao.updateIndex(fileIndexs.get(0));
 					
 					// 修改源文件
 					contentBytes = FileUtil.readByte(cachFileStr);
@@ -297,14 +319,21 @@ public class RepaireThread extends Thread{
 					//  上传flag文件
 					String result = null;
 					HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);
-					File file = new File(this.bakPath + File.separator +monitorTask.getFlagName());
+					file = new File(this.bakPath + File.separator +monitorTask.getFlagName());
 					result = httpHandler.upload(file);
 					if(result==null || result.indexOf("success")<=0)
 					{
 						return false;
 					}
+					
+					monitorTask.setUpload(1);
+					globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
 				}
 			}
+			if(tarCachFile.exists()){
+				FileUtil.deleteAll(tarCachFile);
+			}
+			
 		} catch (Exception e1) {
 			e1.printStackTrace();
 			IOC.log.error(e1.getMessage());

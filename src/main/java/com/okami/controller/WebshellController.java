@@ -117,6 +117,18 @@ public class WebshellController {
         return "failed";
     }
     
+    @RequestMapping(value="/webshell/deleteConfig",method=RequestMethod.POST)
+    public String deleteConfig(HttpServletRequest request){
+        String session = request.getParameter("session");
+        String name = request.getParameter("name");
+        String value = request.getParameter("value");
+        WebshellFeatures webshellFeatures= MonitorClientApplication.ctx.getBean(WebshellFeatures.class);
+        if(webshellFeatures.add(session, name, value)){
+        	return "success";
+        }
+        return "failed";
+    }
+    
     @RequestMapping(value="/webshell/getConfig",method=RequestMethod.GET)
     public String getConfig(){
         return FileUtil.readAll("config/webshellFeatures.ini","UTF-8");

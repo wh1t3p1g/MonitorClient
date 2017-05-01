@@ -258,9 +258,9 @@ public class ControlCenter {
 							"\tInfo\tThe Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath());
 					return false;
 				}
-				IOC.log.warn("Assume That The Backup File Is Normal Without Networking: " + monitorTask.getMonitorPath());
+				IOC.log.warn("Assume That The Backup File Is Normal Without Networking Check: " + monitorTask.getMonitorPath());
 				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
-						"\tInfo\tAssume That The Backup File Is Normal Without Networking: " + monitorTask.getMonitorPath());
+						"\tInfo\tAssume That The Backup File Is Normal Without Networking Check: " + monitorTask.getMonitorPath());
 			} 
 		}
 		
