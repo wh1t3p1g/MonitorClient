@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.List;
 import java.util.Queue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -78,6 +79,15 @@ public class RepaireThread extends Thread{
 	        		break;
 	        	case "Remove":
 	        		if(remove(textLine[3],textLine[4])){
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+ textLine[2]+textLine[3]+" Deal Success!");
+	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Success!");
+	        		}else{
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+ textLine[2]+textLine[3]+" Deal Failed!");
+	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Failed!");
+	        		}
+	        		break;
+	        	case "edit":
+	        		if(edit(textLine[3],textLine[4],textLine[5])){
 	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+ textLine[2]+textLine[3]+" Deal Success!");
 	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Success!");
 	        		}else{
@@ -160,6 +170,7 @@ public class RepaireThread extends Thread{
 
 				} catch (Exception e) {
 					IOC.log.error(e.getMessage());
+					return false;
 				} 
 				break;
 			}
@@ -185,6 +196,10 @@ public class RepaireThread extends Thread{
 			if(monitorTask.getTaskName().equals(taskName)){
 				FileIndexDao fileIndexDao = globaVariableBean.getFileIndexDaoList().get(i);
 				try {
+					
+					// 删除数据库中对应的行
+					fileIndexDao.deleteIndexLikePath(indexPath);
+					
 					// 移除文件
 					for(FileIndex fileIndex:fileIndexDao.queryIndexLikePath(indexPath)){
 						// 如果是文件，则删除备份
@@ -195,10 +210,87 @@ public class RepaireThread extends Thread{
 						}
 				
 					}
+
+					//  上传flag文件
+					String result = null;
+					HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);
+					File file = new File(this.bakPath + File.separator +monitorTask.getFlagName());
+					while(result==null || result.indexOf("success")<=0)
+					{
+						try {
+							sleep(3000);
+							result = httpHandler.upload(file);
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						}
+					}
 					
-					// 删除数据库中对应的行
-					fileIndexDao.deleteIndexLikePath(indexPath);
-					
+				} catch (Exception e) {
+					IOC.log.error(e.getMessage());
+				} 
+			}
+			
+		}		
+		return true;
+	}
+	
+	/**
+	 * 用来编辑flag中有的文件，例如webshell
+	 * @param tarPath
+	 * @return
+	 */
+	public boolean edit(String indexPath,String taskName,String cachFileStr){
+		// 初始化
+		MonitorTask monitorTask;
+		
+		for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
+			monitorTask = globaVariableBean.getMonitorTaskList().get(i);
+			
+			// 找到对应的任务
+			if(monitorTask.getTaskName().equals(taskName)){
+				FileIndexDao fileIndexDao = globaVariableBean.getFileIndexDaoList().get(i);
+				try {
+					List<FileIndex> fileIndexs = fileIndexDao.queryIndexByPath(indexPath);
+					if(fileIndexs.size()>=1){
+						// 删除原始备份文件
+						String srcSHA1 = fileIndexs.get(0).getSha1();
+						File srcBakFile = new File(configBean.getBakPath()+File.separator+taskName+
+								File.separator+srcSHA1.substring(0,2)+File.separator+srcSHA1.substring(2));
+						if(srcBakFile.exists()){
+							FileUtil.deleteAll(srcBakFile);
+						}
+						
+						// 添加备份文件
+						File tarCachFile = new File(cachFileStr); 
+						String tarSha1 = DataUtil.getSHA1ByFile(tarCachFile);
+			        	byte[] contentBytes = ZLibUtil.compress(FileUtil.readByte(cachFileStr));
+						FileUtil.write(configBean.getBakPath()+File.separator+taskName+
+								File.separator+tarSha1.substring(0,2)+File.separator+tarSha1.substring(2), contentBytes);
+						
+						
+						// 更新数据库
+						fileIndexs.get(0).setSha1(tarSha1);
+						fileIndexDao.updateIndex(fileIndexs.get(0));
+						
+						// 修改源文件
+						contentBytes = FileUtil.readByte(cachFileStr);
+						FileUtil.write(monitorTask.getMonitorPath()+fileIndexs.get(0).getPath(), contentBytes);
+						
+					}
+//					// 删除数据库中对应的行
+//					fileIndexDao.deleteIndexLikePath(indexPath);
+//					
+//					// 移除文件
+//					for(FileIndex fileIndex:fileIndexDao.queryIndexLikePath(indexPath)){
+//						// 如果是文件，则删除备份
+//						if(fileIndex.getType().equals("File")){
+//							String bakname = this.bakPath + File.separator + monitorTask.getTaskName() + File.separator + fileIndex.getSha1().substring(0,2);
+//							bakname = bakname + File.separator + fileIndex.getSha1().substring(2);
+//							FileUtil.deleteAll(new File(bakname));
+//						}
+//				
+//					}
+
 					//  上传flag文件
 					String result = null;
 					HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);

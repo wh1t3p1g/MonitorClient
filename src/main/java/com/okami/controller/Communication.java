@@ -5,6 +5,7 @@ import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
 import com.okami.bean.Message;
 import com.okami.bean.PathTree;
+import com.okami.common.HttpHandler;
 import com.okami.config.DBConfig;
 import com.okami.core.ControlCenter;
 import com.okami.core.IOC;
@@ -14,6 +15,8 @@ import com.okami.entities.MonitorTask;
 import com.okami.plugin.ScannerApplication;
 import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
+import com.okami.util.IniUtil;
+import com.okami.util.ZLibUtil;
 
 import org.apache.catalina.util.URLEncoder;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,6 +52,50 @@ public class Communication {
     public String getStatus(@PathVariable int id){
         return ""+id;
     }
+    
+    /**
+     * 设置配置
+     * @data 2017年4月30日
+     * @param request
+     * @return
+     */
+    @RequestMapping(value="/setDelay",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
+    public String setDelay(HttpServletRequest request){
+    	String delayStr = request.getParameter("delay");
+    	int delay = 1;
+    	try {
+    	    delay = Integer.parseInt(delayStr)*60;
+    	    ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
+    	    configBean.setDelay(delay);
+    	    IniUtil.setDelay(delay, System.getProperty("user.dir") + File.separator + "config/config.ini");
+    	} catch (NumberFormatException e) {
+    		return DataUtil.toJson(returnMessage(-8,"Set Delay: "+delayStr));
+    	}
+    	return DataUtil.toJson(returnMessage(1,"Set Delay: "+delayStr));
+    }
+    
+    /**
+     * 移除对应的文件
+     * @data 2017年4月23日
+     * @param request
+     * @return
+     */
+    @RequestMapping(value="/uploadSuspiciousFile",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
+    public String uploadSuspiciousFile(HttpServletRequest request){
+    	String indexPath = request.getParameter("filepath");
+    	HttpHandler httpHandler = IOC.instance().getClassobj(HttpHandler.class);
+		String result = null;
+		File file = new File(indexPath);
+		if(!file.exists()){
+			return DataUtil.toJson(returnMessage(-11,"Upload Suspicious File: "+indexPath));
+		}
+		
+		result = httpHandler.uploadSuspiciousFile(file);
+		if(result==null || result.indexOf("success")<=0){
+			return DataUtil.toJson(returnMessage(-10,"Upload Suspicious File: "+indexPath));
+		}
+    	return DataUtil.toJson(returnMessage(1,"Upload Suspicious File: "+indexPath));
+    }
 
 
     /**
@@ -57,26 +104,68 @@ public class Communication {
      * @param request
      * @return
      */
-    @RequestMapping(value="/remove",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
-    public String remove(HttpServletRequest request){
+    @RequestMapping(value="/removeFile",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
+    public String removeFile(HttpServletRequest request){
     	String indexPath = request.getParameter("indexPath");
     	String taskName = request.getParameter("taskName");
     	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
     	for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
     		if(globaVariableBean.getMonitorTaskList().get(i).getTaskName().equals(taskName)){
     			if(globaVariableBean.getBackupAndCheckThreadList().get(i).getStatus()==0){
-    				return DataUtil.toJson(returnMessage(-1,"Remove: "+indexPath));
+    				return DataUtil.toJson(returnMessage(-1,"Remove File: "+indexPath));
     				
     			}else{
     		        RepaireThread repaireThread = IOC.instance().getClassobj(RepaireThread.class);
     		        if(repaireThread.remove(indexPath.substring(globaVariableBean.getMonitorTaskList().get(i).getMonitorPath().length()), taskName))
     		        {
-        				return DataUtil.toJson(returnMessage(1,"Remove: "+indexPath));
+        				return DataUtil.toJson(returnMessage(1,"Remove File: "+indexPath));
     		        }
     			}
     		}
     	}
-    	return DataUtil.toJson(returnMessage(-2,"Remove: "+indexPath));
+    	return DataUtil.toJson(returnMessage(-2,"Remove File: "+indexPath));
+    }
+    
+    /**
+     * 移除对应的文件
+     * @data 2017年4月23日
+     * @param request
+     * @return
+     */
+    @RequestMapping(value="/editFile",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
+    public String editFile(HttpServletRequest request){
+    	String indexPath = request.getParameter("indexPath");
+    	String taskName = request.getParameter("taskName");
+    	String fileName = request.getParameter("fileName");
+    	byte[] contentBytes = request.getParameter("content").getBytes();   // 暂定
+  
+    	
+    	// 先放入缓存文件中
+    	ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
+    	String cachFileStr = configBean.getCachPath()+File.separator+taskName+File.separator+fileName;
+    	File file = new File(cachFileStr);
+    	if(file.exists()){
+    		FileUtil.deleteAll(file);
+    	}
+		FileUtil.write(cachFileStr, contentBytes);
+    			
+    			
+    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
+    	for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
+    		if(globaVariableBean.getMonitorTaskList().get(i).getTaskName().equals(taskName)){
+    			if(globaVariableBean.getBackupAndCheckThreadList().get(i).getStatus()==0){
+    				return DataUtil.toJson(returnMessage(-1,"Edit File: "+indexPath));
+    				
+    			}else{
+    		        RepaireThread repaireThread = IOC.instance().getClassobj(RepaireThread.class);
+    		        if(repaireThread.edit(indexPath.substring(globaVariableBean.getMonitorTaskList().get(i).getMonitorPath().length()), taskName,cachFileStr))
+    		        {
+        				return DataUtil.toJson(returnMessage(1,"Edit File: "+indexPath));
+    		        }
+    			}
+    		}
+    	}
+    	return DataUtil.toJson(returnMessage(-2,"Edit File"+indexPath));
     }
     
     /**
@@ -240,6 +329,11 @@ public class Communication {
     	try {
 			for(MonitorTask mTask:monitorTaskDao.queryTask()){
 				if(mTask.getMonitorPath().equals(monitorPath)||mTask.getTaskName().equals(taskName)){
+					// 还在运行中
+					if(mTask.getStatus()==1){
+						return DataUtil.toJson(returnMessage(-5,"Edit Monitor: "+taskName));
+					}
+					
 					// 修改数据库
 					MonitorTask monitorTask = IOC.instance().getClassobj(MonitorTask.class);
 		        	monitorTask.setTaskName(taskName);
@@ -287,11 +381,15 @@ public class Communication {
     	
     	// 数据库中有执行任务
     	MonitorTaskDao monitorTaskDao = globaVariableBean.getMonitorTaskDao();
+    	
     	try {
 			for(MonitorTask monitorTask:monitorTaskDao.queryTask()){
 				if(monitorTask.getTaskName().equals(taskName)){
-					
-			    	ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
+					// 以备份模式
+					monitorTask.setBCMode(0);
+					monitorTaskDao.updateTask(monitorTask);
+			    	
+					ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
 			    	if(controlCenter.startMonitor(monitorTask)){
 				    	return DataUtil.toJson(returnMessage(1,"Start Monitor: "+taskName));
 			    	}
@@ -361,6 +459,13 @@ public class Communication {
     			if(deleteFile.exists()){
     				FileUtil.deleteAll(deleteFile);
     			}
+    			
+    			// 测试
+    			deleteFile = new File(configBean.getBakPath()+File.separator+monitorTask.getFlagName());
+    			if(deleteFile.exists()){
+    				FileUtil.deleteAll(deleteFile);
+    			}
+    			
     			deleteFile = new File(configBean.getCachPath()+File.separator+taskName);
     			if(deleteFile.exists()){
     				FileUtil.deleteAll(deleteFile);
@@ -385,6 +490,11 @@ public class Communication {
      */
     @RequestMapping(value="/getPath",method=RequestMethod.GET, produces = "application/json; charset=utf-8")
     public String getPath(@RequestParam(value = "rootPath", required = true) String rootPath){ 
+    	if(File.separator.equals("\\")){
+    		rootPath = rootPath.replaceAll("/", "\\\\");
+    	}else{
+    		rootPath = rootPath.replaceAll("\\\\", "/");
+    	}
     	File file = new File(rootPath);
     	List<PathTree> pathTree = PathTree.getPath(file);
     	if (pathTree == null ||pathTree.size() == 0 )
@@ -405,6 +515,8 @@ public class Communication {
     		case -7: message = "Mission Failed("+mission+"): Get Monitor Task Failed!";break;
     		case -8: message = "Mission Failed("+mission+"): Error occurred!"; break;
     		case -9: message = "Mission Failed("+mission+"): This Monitor Task Stop Failed!"; break;
+    		case -10: message = "Mission Failed("+mission+"): Upload File Failed!"; break;
+    		case -11: message = "Mission Failed("+mission+"): This File Is Exist!"; break;
     	}
     	
     	if(status==1){

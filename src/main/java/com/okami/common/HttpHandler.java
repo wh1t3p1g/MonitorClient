@@ -13,6 +13,8 @@ import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.IniUtil;
 import com.okami.util.WebUtil;
+import com.okami.util.FileUtil;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -139,9 +141,25 @@ public class HttpHandler {
 	public String upload(File file){
 		headers.remove("Content-Type");
 		HttpResponse httpResponse =
-				WebUtil.uploadFile(
+				WebUtil.uploadFile( 
 						RHost+"/Monitor/public/upload/up",
 						headers,file.getAbsoluteFile().toString());
+		String result = WebUtil.getResponseBody(httpResponse);
+		return result;
+	}
+	
+	/**
+	 * 发生可疑的文件内容
+	 * @data 2017年4月23日
+	 * @param file
+	 * @return
+	 */
+	public String uploadSuspiciousFile(File file){
+		headers.put("Content-Type", "application/x-www-form-urlencoded");
+		HttpResponse httpResponse =
+				WebUtil.httpPost(
+						RHost+"/Monitor/public/upload/up",
+						headers,FileUtil.readByte(file.getAbsolutePath().toString()));
 		String result = WebUtil.getResponseBody(httpResponse);
 		return result;
 	}
@@ -162,7 +180,7 @@ public class HttpHandler {
 			result = WebUtil.getResponseBodyBytes(httpResponse);
 			i--;
 		}
-		if(result.toString().equals("not found")){
+		if(result==null||result.toString().equals("not found")){
 			return null;
 		}
 

@@ -325,6 +325,12 @@ public class WebUtil {
 	}
 	
 	
+	/**
+	 * 获取返回相响应体
+	 * @data 2017年4月30日
+	 * @param response
+	 * @return
+	 */
 	public static byte[] getResponseBodyBytes(HttpResponse response){
 		if(response==null){
 			return null;
