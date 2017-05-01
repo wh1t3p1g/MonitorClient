@@ -33,7 +33,6 @@ public class FuzzyHashScanner extends AbstractScanner{
         List<FileContent> fileContents=getTask().getFileContents();
         for(FileContent fileContent:fileContents){
             if(fileContent.getSize()<=4096)continue;
-            MonitorClientApplication.log.info("start checking "+fileContent.getFilePath());
             String content= FileUtil.readAll(fileContent.getFilePath());
             String result= fuzzyHash.calculate(content);
             if(!result.equals("false")){
