@@ -42,7 +42,7 @@ public class FullScanner extends AbstractScanner {
         fuzzyHash.setThreshold(90);
         // /.init
         for (FileContent fileContent : fileContents) {
-            String content=FileUtil.readAll(fileContent.getFilePath());
+            String content=FileUtil.readAll(fileContent.getFilePath(),"UTF-8");
             //checking fuzzyhash
             String result=fuzzyHash.calculate(content);
             if(!result.equals("false")){

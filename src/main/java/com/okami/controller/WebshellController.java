@@ -50,7 +50,7 @@ public class WebshellController {
             task.setExceptPath(request.getParameter("except_path"));
             task.setExceptExtension(request.getParameter("except_extension"));
             task.setScriptExtension(request.getParameter("script_extension"));
-            task.setFilter(request.getParameter("filter").equals("true"));
+            task.setFilter(true);
             task.setType(Integer.parseInt(request.getParameter("type")));
             task.setMode(Integer.parseInt(request.getParameter("mode")));
             scannerApplication.setTask(task);
