@@ -79,6 +79,7 @@ public class FileUtil {
             return byteBuffer.array();
         } catch (IOException e) {
             e.printStackTrace();
+            
         }
         return null;
     }

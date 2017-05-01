@@ -1,6 +1,7 @@
 package com.okami.core;
 
 
+import java.io.File;
 import java.util.Date;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,6 +13,9 @@ import com.okami.common.HttpHandler;
 import com.okami.config.DBConfig;
 import com.okami.dao.impl.CacheLogDao;
 import com.okami.entities.CacheLog;
+import com.okami.entities.MonitorTask;
+import com.okami.util.DataUtil;
+import com.okami.util.FileUtil;
 
 @Component
 public class ScheduledThread {
@@ -29,6 +33,10 @@ public class ScheduledThread {
     private boolean diffFlag = true ; 
     
     private boolean sendLogFlag = true;
+    
+    private Date nowTime ;
+    
+    private Date lastTime ;
    
     
     private CacheLogDao cacheLogDao ; 
@@ -43,19 +51,21 @@ public class ScheduledThread {
         cacheLogDao = new CacheLogDao();
         cacheLogDao.setDataSource(new DBConfig().dataSource());
     }
-
     
-    @Scheduled(fixedDelay=60*1000) 
-    public void heartbeats() {
-        String result;
-        Date nowTime = new Date();
-        Date lastTime = nowTime;
+    /**
+     * 发送心跳
+     * @data 2017年5月1日
+     */
+    public void sendHB(){
+    	
+        nowTime = new Date();
+        lastTime = nowTime;
         if (count >=  configBean.getDelay()/60 || count ==-1 ){
             if(count == -1){
             	IOC.log.warn(String.format("Connecting Server (%s:%s) ...",configBean.getRhost(),configBean.getRport()));
 
             }
-    
+            String result = null;;
             result = httpHandler.sendHB();
             if(result==null || result.indexOf("success")<=0){
                 statusFlag = false; 
@@ -76,10 +86,16 @@ public class ScheduledThread {
             count = 0 ;
         }
         count ++ ;
-        
-     // 有消息推送过来
+    }
+    
+    /**
+     * 有消息推送过来
+     * @data 2017年5月1日
+     */
+    public void sendMessage(){
+    	
 		while(!globaVariableBean.getQHeartBeats().isEmpty()){
-			
+			String result = null;;
 			if(((nowTime.getTime() - lastTime.getTime())/1000) >= configBean.getDelay()){
 				break;
 			}
@@ -109,9 +125,13 @@ public class ScheduledThread {
 			}
 		}
         
-    	// 如果有缓存的log 则进行处理
-		if(statusFlag&&sendLogFlag){
+    }
+    
+    public void sendCachLog(){
+    	
+    	if(statusFlag&&sendLogFlag){
 			try {
+				String result = null;;
 				List<CacheLog> CacheLogs = cacheLogDao.queryCacheLog();	
 				for(CacheLog cacheLog:CacheLogs){
 					//发送
@@ -130,6 +150,87 @@ public class ScheduledThread {
 				IOC.log.error(e.getMessage());
 			}
 		}
+		
+    }
+    
+    /**
+     * 发送文件
+     * @data 2017年5月1日
+     */
+    public void sendFile(){
+    	if(statusFlag){
+    		String result = null;;
+			boolean flag = true;
+			
+			try {
+				for(MonitorTask mTask:globaVariableBean.getMonitorTaskDao().queryTask()){
+					if(mTask.getUpload()==0&&mTask.getBCMode()==1){
+						// 上传rar文件
+						String cachFold = configBean.getCachPath() + File.separator + mTask.getFlagName();
+						File[] files = new File(cachFold).listFiles();
+						for(File file:files){
+							result = httpHandler.upload(file);
+							if(result==null || result.indexOf("success")<=0)
+							{
+								statusFlag = false;
+								flag = false;
+								break;
+							}
+						}
+						
+						//  上传flag文件
+						File file = new File(configBean.getBakPath()  + File.separator +mTask.getFlagName());
+						result = httpHandler.upload(file);
+						if(result==null || result.indexOf("success")<=0){
+							statusFlag = false;
+							flag = false;
+							break;
+						}
+						else{
+							statusFlag = true;
+						}
+						
+						if(flag){
+							// 更新数据库的上传标志
+							try {
+								mTask.setUpload(1);
+								globaVariableBean.getMonitorTaskDao().updateTask(mTask);
+							} catch (Exception e) {
+								e.printStackTrace();
+								IOC.log.error(e.getMessage());
+							}
+							
+							httpHandler.sendMonitorEvent(DataUtil.getTime(),"Info","Upload Success: "+mTask.getMonitorPath());
+							IOC.log.warn("Upload Success: " + mTask.getMonitorPath());
+							
+							// 上传后删除rar文件
+							File cashPath= new File(cachFold);
+							if(cashPath.exists()){
+								FileUtil.deleteAll(cashPath);
+							}
+						}
+					}
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				IOC.log.warn(e.getMessage());
+			}
+		}
+    }
+    
+    @Scheduled(fixedDelay=60*1000) 
+    public void heartbeats() {
+        // 发生心跳
+    	sendHB();
+
+    	// 有消息推送过来
+    	sendMessage();
+    	
+    	// 如果有缓存的log 则进行处理
+    	sendCachLog();
+		
+		// 文件没有上传的继续上传
+    	sendFile();
 
     }
     

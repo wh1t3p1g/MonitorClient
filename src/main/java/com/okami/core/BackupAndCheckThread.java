@@ -27,6 +27,9 @@ public class BackupAndCheckThread extends Thread{
 	@Autowired
 	private HttpHandler httpHandler;
 	
+	@Autowired
+	private GlobaVariableBean globaVariableBean;
+	
 	private String bakPath;
 	
 	private String cachPath;
@@ -156,7 +159,9 @@ public class BackupAndCheckThread extends Thread{
 			if(!fileIndexDao.isTableExist()){
 				fileIndexDao.createTable();
 			}else{
-				fileIndexDao.deleteAll();
+//				fileIndexDao.deleteAll();
+				fileIndexDao.deleteTable();
+				fileIndexDao.createTable();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -179,7 +184,6 @@ public class BackupAndCheckThread extends Thread{
 		
 		// 以后变成自检模式，并插入数据库
 		monitorTask.setBCMode(1);
-		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
 		for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
 			if(globaVariableBean.getMonitorTaskList().get(i).getTaskName().equals(monitorTask.getTaskName())){
 				globaVariableBean.getMonitorTaskList().get(i).setBCMode(1);
@@ -191,43 +195,51 @@ public class BackupAndCheckThread extends Thread{
 			IOC.log.error(e.getMessage());
 		}
 		
+		boolean flag = true;
 		
 		// 上传rar文件
 		String result = null ;
 		File[] files = new File(this.cachPath).listFiles();
 		for(File file:files){
-			result = null;
-			while(result==null || result.indexOf("success")<=0)
+			result = httpHandler.upload(file);
+			if(result==null || result.indexOf("success")<=0)
 			{
-				try {
-					sleep(3000);
-					result = httpHandler.upload(file);
-				} catch (InterruptedException e) {
-					IOC.log.error(e.getMessage());
-				}
+				flag = false;
 			}
 		}
 
 		// 上传flag文件 
 		File file = new File(configBean.getBakPath() + File.separator + monitorTask.getFlagName());
-		result = null;
-		while(result==null || result.indexOf("success")<=0)
+		result = httpHandler.upload(file);
+		if(result==null || result.indexOf("success")<=0)
 		{
+			flag = false;
+		}
+		
+		if(flag){
+			// 更新数据库的上传标志
 			try {
-				sleep(3000);
-				result = httpHandler.upload(file);
-			} catch (InterruptedException e) {
+				monitorTask.setUpload(1);
+				globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
+			} catch (Exception e) {
+				e.printStackTrace();
 				IOC.log.error(e.getMessage());
 			}
+			
+			
+			qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUpload Success: "+monitorTask.getMonitorPath());
+			IOC.log.warn("Upload Success: " + monitorTask.getMonitorPath());
+			
+			// 上传后删除rar文件
+			File cashPath= new File(this.cachPath);
+			if(cashPath.exists()){
+				FileUtil.deleteAll(cashPath);
+			}
+		}else{
+			qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUpload Failed: "+monitorTask.getMonitorPath());
+			IOC.log.warn("Upload Failed: " + monitorTask.getMonitorPath());
 		}
-		qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUpload Success: "+monitorTask.getMonitorPath());
-		IOC.log.warn("Upload Success: " + monitorTask.getMonitorPath());
 		
-		// 上传后删除rar文件
-		File cashPath= new File(this.cachPath);
-		if(cashPath.exists()){
-			FileUtil.deleteAll(cashPath);
-		}
 		
 
 		
@@ -253,6 +265,16 @@ public class BackupAndCheckThread extends Thread{
 				FileIndex fileIndex = new FileIndex();
 				if(file[i].isDirectory()){
 					fileIndex.setType("Fold");
+					
+					
+					fileIndex.setTime(time);
+					fileIndex.setPath(file[i].getAbsolutePath().substring(monitorTask.getMonitorPath().length()));
+					fileIndex.setWrite((file[i].canWrite())? 1:0);
+					fileIndex.setRead((file[i].canRead())? 1:0);
+					fileIndex.setExec((file[i].canExecute())? 1:0);
+					fileIndex.setStatus(1);
+					fileIndexDao.insertIndex(fileIndex);
+					
 					backup(file[i]);
 				}else{
 					// 压缩文件
@@ -285,14 +307,17 @@ public class BackupAndCheckThread extends Thread{
 		            fileIndex.setSize(String.valueOf(file[i].length()));
 		            fileIndex.setSha1(sha1Str);
 		            fileIndex.setRarId(rarId);
+		            
+		            
+					fileIndex.setTime(time);
+					fileIndex.setPath(file[i].getAbsolutePath().substring(monitorTask.getMonitorPath().length()));
+					fileIndex.setWrite((file[i].canWrite())? 1:0);
+					fileIndex.setRead((file[i].canRead())? 1:0);
+					fileIndex.setExec((file[i].canExecute())? 1:0);
+					fileIndex.setStatus(1);
+					fileIndexDao.insertIndex(fileIndex);
 				}
-				fileIndex.setTime(time);
-				fileIndex.setPath(file[i].getAbsolutePath().substring(monitorTask.getMonitorPath().length()));
-				fileIndex.setWrite((file[i].canWrite())? 1:0);
-				fileIndex.setRead((file[i].canRead())? 1:0);
-				fileIndex.setExec((file[i].canExecute())? 1:0);
-				fileIndex.setStatus(1);
-				fileIndexDao.insertIndex(fileIndex);
+
 			}
 		} catch (Exception e) {
 			IOC.log.error(e.getMessage());
@@ -460,6 +485,9 @@ public class BackupAndCheckThread extends Thread{
 						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Web Site File Is Inconsistent: " + monitorTask.getMonitorPath() + fileIndex.getPath());
 						IOC.log.warn("Repaire: The Web Site File Is Inconsistent:" + monitorTask.getMonitorPath() + fileIndex.getPath());
 						file.mkdirs();
+						file.setExecutable(fileIndex.getExec()==1);
+						file.setReadable(fileIndex.getRead()==1);
+						file.setReadable(fileIndex.getRead()==1);
 						IOC.log.warn("Repaire-Machine: The Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath());
 						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath());
 					}	
@@ -545,7 +573,9 @@ public class BackupAndCheckThread extends Thread{
 		bakname = bakname + File.separator + fileIndex.getSha1().substring(2);
 		byte[] contentBytes = ZLibUtil.decompress(FileUtil.readByte(bakname));
 		FileUtil.write(monitorTask.getMonitorPath()+fileIndex.getPath(), contentBytes);
-		
+		file.setExecutable(fileIndex.getExec()==1);
+		file.setReadable(fileIndex.getRead()==1);
+		file.setReadable(fileIndex.getRead()==1);
 		return true;
 	}
 	

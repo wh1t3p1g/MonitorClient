@@ -109,13 +109,21 @@ public interface IFileIndexDao {
 	public boolean createTable() throws Exception ;
 	
 	/**
-	 * 删除数据表
+	 * 删除数据表里的数据
 	 * @data 2017年5月1日
 	 * @param fileIndex
 	 * @return
 	 * @throws Exception
 	 */
 	public boolean deleteAll() throws Exception ;
+	
+	/**
+	 * 删除数据表
+	 * @data 2017年5月1日
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean deleteTable() throws Exception ;
 	
 	/**
 	 * 关闭连接

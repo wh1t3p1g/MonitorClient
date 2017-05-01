@@ -83,8 +83,17 @@ public class MonitorTask {
     @Column(name = "MaxSize") 
 	private String maxSize;
     
+    /**
+     * 当前运行状态
+     */
     @Column(name = "Status") 
     private int status;
+    
+    /**
+     * 当前备份文件上传状态
+     */
+    @Column(name = "Upload") 
+    private int upload;
 	
 	public void setTaskId(Integer taskId){
 		this.taskId = taskId;
@@ -92,6 +101,14 @@ public class MonitorTask {
 	
 	public Integer getTaskId(){
 		return taskId;
+	}
+	
+	public void setUpload(Integer upload){
+		this.upload = upload;
+	}
+	
+	public Integer getUpload(){
+		return upload;
 	}
 	
 	public void setStatus(Integer status){
@@ -196,7 +213,7 @@ public class MonitorTask {
 	}
 	
 	
-	public MonitorTask(Integer taskId,String taskName,String projectName,String monitorPath,String whiteList,String blackList,String flagName,int runMode,int BCMode,String remark,String maxSize,int status){
+	public MonitorTask(Integer taskId,String taskName,String projectName,String monitorPath,String whiteList,String blackList,String flagName,int runMode,int BCMode,String remark,String maxSize,int status,int upload){
 		this.taskId = taskId;
 		this.taskName = taskName;
 		this.projectName = projectName;
@@ -209,6 +226,7 @@ public class MonitorTask {
 		this.remark = remark;
 		this.maxSize = maxSize;
 		this.status = status;
+		this.upload = upload;
 	}
 	
 	public MonitorTask(String taskName){
