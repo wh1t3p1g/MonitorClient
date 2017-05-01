@@ -1,6 +1,9 @@
 package com.okami.plugin.scanner.bean;
 
 import com.okami.MonitorClientApplication;
+
+import org.ini4j.InvalidFileFormatException;
+import org.ini4j.Profile.Section;
 import org.ini4j.Wini;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -38,5 +41,24 @@ public class WebshellFeatures {
             return null;
         return ini.get(configName);
     }
+    
+    /**
+     * 添加一条配置
+     * @data 2017年5月1日
+     * @param configName
+     * @return
+     */
+    public boolean add(String session,String name,String value){
+		try {
+			ini.add(session,name,value);
+			ini.store();
+		} catch (InvalidFileFormatException e) {
+			return false;
+		} catch (IOException e) {
+			return false;
+		}  
+       return true;
+    }
+   
 
 }

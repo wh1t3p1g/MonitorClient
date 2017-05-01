@@ -47,7 +47,7 @@ public class AssignScanner {
                                 +" evil file");
                 System.out.println(task.getFuzzHashScanResults().toString());
                 //todo
-                data="data="+DataUtil.toJson(task.getFuzzHashScanResults())
+                data="data="+DataUtil.urlEncode(DataUtil.toJson(task.getFuzzHashScanResults()))
                                 +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
                                 +"&size="+task.getFuzzHashScanResults().size();
                 httpHandler.sendMessage(data);
@@ -61,7 +61,7 @@ public class AssignScanner {
                         "Static Scan Finished, Found "+task.getStaticScanResults().size()
                                 +" evil file");
                 System.out.println(task.getStaticScanResults().toString());
-                data="data="+DataUtil.toJson(task.getStaticScanResults())
+                data="data="+DataUtil.urlEncode(DataUtil.toJson(task.getStaticScanResults()))
                         +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
                         +"&size="+task.getStaticScanResults().size();
                 httpHandler.sendMessage(data);
@@ -75,7 +75,7 @@ public class AssignScanner {
                         "Statistic Scan Finished, Found "+task.getStatisticsScanResults().size()
                                 +" evil file");
                 System.out.println(task.getStatisticsScanResults().toString());
-                data="data="+DataUtil.toJson(task.getStatisticsScanResults())
+                data="data="+DataUtil.urlEncode(DataUtil.toJson(task.getStatisticsScanResults()))
                         +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
                         +"&size="+task.getStatisticsScanResults().size();
                 httpHandler.sendMessage(data);
@@ -89,7 +89,7 @@ public class AssignScanner {
                                 (task.getFullScanResults().size())
                                 +" evil file");
                 System.out.println(task.getFullScanResults());
-                data="data="+DataUtil.toJson(task.getFullScanResults())
+                data="data="+DataUtil.urlEncode(DataUtil.toJson(task.getFullScanResults()))
                         +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
                         +"&size="+task.getFullScanResults().size();
                 httpHandler.sendMessage(data);

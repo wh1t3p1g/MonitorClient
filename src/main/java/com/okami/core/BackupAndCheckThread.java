@@ -153,11 +153,16 @@ public class BackupAndCheckThread extends Thread{
 		
 		// 新建数据库
 		try {
-
-			fileIndexDao.createTable();
+			if(!fileIndexDao.isTableExist()){
+				fileIndexDao.createTable();
+			}else{
+				fileIndexDao.deleteAll();
+			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			IOC.log.error(e.getMessage());
 		}
+
 		
 		//备份
 		backup(new File(monitorTask.getMonitorPath()));

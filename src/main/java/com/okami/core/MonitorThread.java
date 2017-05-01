@@ -4,9 +4,14 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+
+import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
+import com.okami.config.DBConfig;
 import com.okami.dao.impl.FileIndexDao;
 import com.okami.entities.FileIndex;
 import com.okami.entities.MonitorTask;
@@ -22,7 +27,7 @@ import net.contentobjects.jnotify.*;
 @Component
 @Scope("prototype")
 public class MonitorThread {  
-
+    
     // 通用配置
     private MonitorTask monitorTask;
     private FileIndexDao fileIndexDao ;
@@ -45,6 +50,7 @@ public class MonitorThread {
         this.fileIndexDao = fileIndexDao;
         this.listener = new Listener(monitorTask,fileIndexDao);
         this.state = 1;
+       
         return true;
     }
     
@@ -147,13 +153,15 @@ public class MonitorThread {
         private Queue<String> qHeartBeats;
         private Queue<String> qMonitor;
         private Queue<String> qRepaire;
+
         
         public Listener(MonitorTask monitorTask,FileIndexDao fileIndexDao){
             this.monitorTask = monitorTask;
             this.fileIndexDao = fileIndexDao;
             String whiteStr = monitorTask.getWhiteList();
             String blackStr = monitorTask.getBlackList();
-
+                        
+            
             if(whiteStr!=null){
                 this.whiteList = whiteStr.split(",");
             }else{
@@ -399,7 +407,10 @@ public class MonitorThread {
 	            }
                 
         	} catch (Exception e) {
+        	
+        		e.printStackTrace();
         		IOC.log.error(e.getMessage());
+
         	}
 
 //              
