@@ -56,6 +56,7 @@ public class BackupAndCheckThread extends Thread{
 	
 	private String[] whiteList = null;
 	
+	
 
 	/**
 	 * 初始化
@@ -179,8 +180,8 @@ public class BackupAndCheckThread extends Thread{
 		
 		// 切换至安全模式		
 		qMonitor.offer("True");
-		qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Safe Mode: "+monitorTask.getMonitorPath());
-		IOC.log.warn("Turn To Safe Mode: " + monitorTask.getMonitorPath());
+		qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Safe Mode: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+		IOC.log.warn("Info: Turn To Safe Mode: " + monitorTask.getMonitorPath());
 		
 		// 以后变成自检模式，并插入数据库
 		monitorTask.setBCMode(1);
@@ -226,9 +227,8 @@ public class BackupAndCheckThread extends Thread{
 				IOC.log.error(e.getMessage());
 			}
 			
-			
-			qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUpload Success: "+monitorTask.getMonitorPath());
-			IOC.log.warn("Upload Success: " + monitorTask.getMonitorPath());
+			qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUpload Success: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+			IOC.log.warn("Info: Upload Success: " + monitorTask.getMonitorPath());
 			
 			// 上传后删除rar文件
 			File cashPath= new File(this.cachPath);
@@ -236,8 +236,8 @@ public class BackupAndCheckThread extends Thread{
 				FileUtil.deleteAll(cashPath);
 			}
 		}else{
-			qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUpload Failed: "+monitorTask.getMonitorPath());
-			IOC.log.warn("Upload Failed: " + monitorTask.getMonitorPath());
+			qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUpload Failed: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+			IOC.log.warn("Info: Upload Failed: " + monitorTask.getMonitorPath());
 		}
 		
 		
@@ -341,25 +341,36 @@ public class BackupAndCheckThread extends Thread{
 		
 		//根据备份中的flag树整理备份中的文件，不正常则回复文件
 		List<Integer> rarIds = checkBakFile();
-		if(rarIds!=null&&!rarIds.isEmpty()){
+		if(rarIds!=null&&rarIds.size()>0){
 			// 恢复备份文件以及网站文件
-			qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Bak Files Are Inconsistent: "+monitorTask.getMonitorPath());
+			qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Bak Files Are Inconsistent: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 			IOC.log.warn("Repaire: The Bak Files Are Inconsistent: " + monitorTask.getMonitorPath());
+			String filename = null;
 			for(int rarId:rarIds){
 				// 下载相应的rar文件并进行解压
-				contentBytes = httpHandler.download(monitorTask.getTaskName()+"_"+rarId);
+				filename = monitorTask.getTaskName()+"_"+rarId+".rar";
+				contentBytes = httpHandler.download(filename);
 				if(contentBytes!=null){
-					FileUtil.write(cachPath+File.separator+monitorTask.getTaskName()+"_"+rarId, contentBytes);
+					FileUtil.write(cachPath+File.separator+filename, contentBytes);
 					// 解压rar
-					ZipUtil.extractZip(cachPath+File.separator+monitorTask.getTaskName()+"_"+rarId, bakPath, monitorTask.getFlagName());
-					qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Bak Files File Has Fixed: "+monitorTask.getMonitorPath());
-					IOC.log.warn("Repaire-Machine: The Bak Files File Has Fixed: " + monitorTask.getMonitorPath());
+					ZipUtil.extractZip(cachPath+File.separator+filename, bakPath, monitorTask.getFlagName());
+					
+				}else{
+					// 自检出现异常
+					monitorTask.setStatus(0);
+	                qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUnable To Fix Backup File! Stop Monitor: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+	            	IOC.log.warn("Info: Unable To Fix Backup File! Stop Monitor: " + monitorTask.getMonitorPath());
+	            	return false;
 				}
 				
 			}
-			
+			qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Bak Files Has Fixed: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+			IOC.log.warn("Repaire-Machine: The Bak Files File Has Fixed: " + monitorTask.getMonitorPath());
 		}
-
+		if(monitorTask.getStatus()==0){
+			return false;
+		}
+		
 		// 检查网站文件,发生异常
 		checkWebFile();
 
@@ -371,8 +382,15 @@ public class BackupAndCheckThread extends Thread{
 		
 		// 切换至安全模式
 		qMonitor.offer("True");
-		qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Safe Mode: "+monitorTask.getMonitorPath());
-		IOC.log.warn("Turn To Safe Mode: " + monitorTask.getMonitorPath());
+		qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Safe Mode: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+		IOC.log.warn("Info: Turn To Safe Mode: " + monitorTask.getMonitorPath());
+		
+		// 上传后删除rar文件
+		File cashPath= new File(this.cachPath);
+		if(cashPath.exists()){
+			FileUtil.deleteAll(cashPath);
+		}
+		
 		return true;
 	}
 	
@@ -388,7 +406,7 @@ public class BackupAndCheckThread extends Thread{
 		try {
 			// 查询文件树
 			List<FileIndex> fileIndexList = fileIndexDao.queryIndex();
-			String bakPath = this.bakPath + File.separator + monitorTask.getTaskName();
+			String bakPath = this.bakPath ;
 			String bakSha1;
 			String bakname;
 			File file;
@@ -412,6 +430,7 @@ public class BackupAndCheckThread extends Thread{
 						}
 					}		
 				}
+
 			}
 		} catch (Exception e) {
 			IOC.log.error(e.getMessage());
@@ -456,24 +475,24 @@ public class BackupAndCheckThread extends Thread{
                 if(whiteFlag)
                 	continue;
                 
-				
+
 				// 如果是文件则计算网站文件的sha1
 				if(fileIndex.getType().equals("File")){
 					file = new File(webFile);
 					if(!file.exists()){
-						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Web Site File Is Inconsistent: "+monitorTask.getMonitorPath() + fileIndex.getPath());
+						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Web Site File Is Inconsistent: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 						IOC.log.warn("Repaire: The Web Site File Is Inconsistent: " + monitorTask.getMonitorPath() + fileIndex.getPath());
 						restoreFile(fileIndex);
-						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath());
+						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Web Site File Has Fixed: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 						IOC.log.warn("Repaire-Machine: The Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath());
 					}else{
 						webSha1 = DataUtil.getSHA1ByFile(file);
 						if(!fileIndex.getSha1().equals(webSha1)){
-							qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Web Site File Is Inconsistent: " + monitorTask.getMonitorPath() + fileIndex.getPath());
+							qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Web Site File Is Inconsistent: " + monitorTask.getMonitorPath() + fileIndex.getPath()+"\t"+monitorTask.getTaskName());
 							IOC.log.warn("Repaire: The Web Site File Is Inconsistent: " + monitorTask.getMonitorPath() + fileIndex.getPath());
 							restoreFile(fileIndex);
 							IOC.log.warn("Repaire-Machine: The Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath());
-							qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath());
+							qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath()+"\t"+monitorTask.getTaskName());
 						}
 					}		
 				}
@@ -482,14 +501,14 @@ public class BackupAndCheckThread extends Thread{
 				else if(fileIndex.getType().equals("Fold")){
 					file = new File(webFile);
 					if(!file.exists()){
-						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Web Site File Is Inconsistent: " + monitorTask.getMonitorPath() + fileIndex.getPath());
+						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Web Site File Is Inconsistent: " + monitorTask.getMonitorPath() + fileIndex.getPath()+"\t"+monitorTask.getTaskName());
 						IOC.log.warn("Repaire: The Web Site File Is Inconsistent:" + monitorTask.getMonitorPath() + fileIndex.getPath());
 						file.mkdirs();
 						file.setExecutable(fileIndex.getExec()==1);
-						file.setReadable(fileIndex.getRead()==1);
+						file.setWritable(fileIndex.getWrite()==1);
 						file.setReadable(fileIndex.getRead()==1);
 						IOC.log.warn("Repaire-Machine: The Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath());
-						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath());
+						qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + fileIndex.getPath()+"\t"+monitorTask.getTaskName());
 					}	
 				}
 			}
@@ -524,11 +543,11 @@ public class BackupAndCheckThread extends Thread{
 				String temStr = file.getAbsolutePath().substring(monitorTask.getMonitorPath().length());
 				fileIndex = this.fileIndexDao.queryOneIndexByPath(temStr);
 				if(fileIndex==null){
-					qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Web Site File Is Inconsistent: " + monitorTask.getMonitorPath() + temStr);
+					qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Web Site File Is Inconsistent: " + monitorTask.getMonitorPath() + temStr+"\t"+monitorTask.getTaskName());
 					IOC.log.info("Repaire: The Web Site File Is Inconsistent:" + monitorTask.getMonitorPath() + temStr);
 					FileUtil.deleteAll(file);
 					IOC.log.info("Repaire-Machine: The Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + temStr);
-					qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + temStr);
+					qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Web Site Files Has Fixed: " + monitorTask.getMonitorPath() + temStr+"\t"+monitorTask.getTaskName());
 				}else{
 					if(file.isDirectory()){
 						checkWebSpilthFile(file);

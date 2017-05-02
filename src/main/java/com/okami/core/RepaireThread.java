@@ -67,31 +67,13 @@ public class RepaireThread extends Thread{
 	        		// 还原flag中有的文件
 	     
 	        		if(restore(textLine[3],textLine[4])){
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+textLine[2]+textLine[3]+" Deal Success!");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+textLine[2]+textLine[3]+" Deal Success!"+"\t"+textLine[4]);
 	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Success!");
 	        		}else{
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+ textLine[1]+"-Machine\t"+textLine[2]+textLine[3]+" Deal Failed!");
+	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+ textLine[1]+"-Machine\t"+textLine[2]+textLine[3]+" Deal Failed!"+"\t"+textLine[4]);
 	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Failed!");
 	        		}
 	        		break;
-//	        	case "Remove":
-//	        		if(remove(textLine[3],textLine[4])){
-//	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+ textLine[2]+textLine[3]+" Deal Success!");
-//	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Success!");
-//	        		}else{
-//	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+ textLine[2]+textLine[3]+" Deal Failed!");
-//	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Failed!");
-//	        		}
-//	        		break;
-//	        	case "edit":
-//	        		if(edit(textLine[3],textLine[4],textLine[5])){
-//	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+ textLine[2]+textLine[3]+" Deal Success!");
-//	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Success!");
-//	        		}else{
-//	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+ textLine[2]+textLine[3]+" Deal Failed!");
-//	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Failed!");
-//	        		}
-//	        		break;
 	        	default:
 	        		return;
 	        	}
@@ -145,7 +127,7 @@ public class RepaireThread extends Thread{
 							while(!file.exists()){
 								file.mkdirs();
 								file.setExecutable(fileIndex.getExec()==1);
-								file.setReadable(fileIndex.getRead()==1);
+								file.setWritable(fileIndex.getWrite()==1);
 								file.setReadable(fileIndex.getRead()==1);
 							}						
 						}

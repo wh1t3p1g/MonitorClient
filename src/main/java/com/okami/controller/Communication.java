@@ -56,7 +56,7 @@ public class Communication {
     	String delayStr = DataUtil.urlDecode(request.getParameter("delay"));
     	int delay = 1;
     	try {
-    	    delay = Integer.parseInt(delayStr)*60;
+    	    delay = (new Double(Double.valueOf(delayStr)*60)).intValue();
     	    ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
     	    configBean.setDelay(delay);
     	    IniUtil.setDelay(delay, System.getProperty("user.dir") + File.separator + "config/config.ini");
@@ -85,7 +85,7 @@ public class Communication {
 		if(!file.exists()){
 			return DataUtil.toJson(returnMessage(-11,"Get Suspicious File: "+indexPath));
 		}
-    	IOC.log.warn("Mission Success(Get Suspicious File: "+indexPath+"): Deal Mission Sucess!");
+    	IOC.log.warn("Info: Mission Success(Get Suspicious File: "+indexPath+"): Deal Mission Sucess!");
     	return FileUtil.readAll(indexPath,"UTF-8");
     }
 
@@ -110,7 +110,7 @@ public class Communication {
 			return DataUtil.toJson(returnMessage(-11,"Get Suspicious File SHA1: "+indexPath));
 		}
 		
-    	IOC.log.warn("Mission Success(Get Suspicious File SHA1:"+indexPath+"): Deal Mission Sucess!");
+    	IOC.log.warn("Info: Mission Success(Get Suspicious File SHA1:"+indexPath+"): Deal Mission Sucess!");
     	return DataUtil.getSHA1ByFile(file);
     }
 
@@ -425,16 +425,23 @@ public class Communication {
     	
     	// 查看任务是否运行
     	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
-    	for(MonitorTask monitorTask:globaVariableBean.getMonitorTaskList()){
-    		if(monitorTask.getTaskName().equals(taskName)){
-    			ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
-    			if(controlCenter.stopMonitor(taskName)){
-			    	return DataUtil.toJson(returnMessage(1,"Stop Monitor: "+taskName));
-    			}
-    		}
-    	}
+    	MonitorTask mTask = null;
+		try{
+			mTask = globaVariableBean.getMonitorTaskDao().queryTaskByTaskName(taskName);
+		} catch (Exception e) {
+			e.printStackTrace();
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Delete Monitor: "+taskName));
+		}
+		
+		if(mTask!=null&&mTask.getStatus()==1){
+			ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
+			if(!controlCenter.stopMonitor(taskName)){
+				return DataUtil.toJson(returnMessage(-9,"Delete Monitor: "+taskName));
+			}
+		}
     
-    	return DataUtil.toJson(returnMessage(-6,"Stop Monitor: "+taskName));
+    	return DataUtil.toJson(returnMessage(1,"Stop Monitor: "+taskName));
     }
     
     
@@ -444,26 +451,27 @@ public class Communication {
     	
     	// 查看任务是否运行
     	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
-    	try {
-			for(MonitorTask mTask:globaVariableBean.getMonitorTaskDao().queryTask()){
-				if(mTask.getTaskName().equals(taskName)){
-					if(mTask.getRunMode()==1||mTask.getRunMode()==2){
-						ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
-						if(!controlCenter.stopMonitor(taskName)){
-							return DataUtil.toJson(returnMessage(-9,"Delete Monitor: "+taskName));
-						}
-					}
-				}
-			}
+    	MonitorTask mTask = null;
+		try{
+			mTask = globaVariableBean.getMonitorTaskDao().queryTaskByTaskName(taskName);
 		} catch (Exception e) {
+			e.printStackTrace();
 			IOC.log.error(e.getMessage());
 			return DataUtil.toJson(returnMessage(-8,"Delete Monitor: "+taskName));
 		}
+		
+		if(mTask!=null&&mTask.getStatus()==1){
+			ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
+			if(!controlCenter.stopMonitor(taskName)){
+				return DataUtil.toJson(returnMessage(-9,"Delete Monitor: "+taskName));
+			}
+		}
+			
+
     	
     	// 数据库中有执行任务
     	MonitorTaskDao monitorTaskDao = globaVariableBean.getMonitorTaskDao();
     	try {
-    		MonitorTask monitorTask = monitorTaskDao.queryTaskByTaskName(taskName);
     		if(monitorTaskDao.deleteTask(taskName)){	
     		    // 删除备份文件
     			ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
@@ -526,16 +534,16 @@ public class Communication {
     		case -5: message = "Mission Failed("+mission+"): This Monitor Task Is Running!"; break;
     		case -6: message = "Mission Failed("+mission+"): This Monitor Task Is Not Running Or Not Exist!"; break;
     		case -7: message = "Mission Failed("+mission+"): Get Monitor Task Failed!";break;
-    		case -8: message = "Mission Failed("+mission+"): Error occurred!"; break;
+    		case -8: message = "Mission Failed("+mission+"): Error Occurred!"; break;
     		case -9: message = "Mission Failed("+mission+"): This Monitor Task Stop Failed!"; break;
     		case -10: message = "Mission Failed("+mission+"): Upload File Failed!"; break;
     		case -11: message = "Mission Failed("+mission+"): This File Is Not Exist!"; break;
     	}
     	
     	if(status==1){
-    		IOC.log.warn(message);
+    		IOC.log.warn("Info: "+message);
     	}else{
-    		IOC.log.warn(message);
+    		IOC.log.warn("Info: "+message);
     	}
     	
     	return new Message(status,message);
@@ -549,9 +557,9 @@ public class Communication {
     	}
     	
     	if(status==1){
-    		IOC.log.warn(message);
+    		IOC.log.warn("Info: "+message);
     	}else{
-    		IOC.log.warn(message);
+    		IOC.log.warn("Info: "+message);
     	}
     	
     	Message mg = new Message(status,message);

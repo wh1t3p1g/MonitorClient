@@ -62,7 +62,7 @@ public class ScheduledThread {
         lastTime = nowTime;
         if (count >=  configBean.getDelay()/60 || count ==-1 ){
             if(count == -1){
-            	IOC.log.warn(String.format("Connecting Server (%s:%s) ...",configBean.getRhost(),configBean.getRport()));
+            	IOC.log.warn(String.format("Info: Connecting Server (%s:%s) ...",configBean.getRhost(),configBean.getRport()));
 
             }
             String result = null;;
@@ -78,9 +78,9 @@ public class ScheduledThread {
             if(statusFlag ^ diffFlag){
                 diffFlag = statusFlag;
                 if(statusFlag){
-                	IOC.log.warn(String.format("Connect Server (%s:%s) Success!",configBean.getRhost(),configBean.getRport()));
+                	IOC.log.warn(String.format("Info: Connect Server (%s:%s) Success!",configBean.getRhost(),configBean.getRport()));
                 }else{              
-                	IOC.log.warn(String.format("Connect Server (%s:%s) Failed!",configBean.getRhost(),configBean.getRport()));
+                	IOC.log.warn(String.format("Info: Connect Server (%s:%s) Failed!",configBean.getRhost(),configBean.getRport()));
                 }
             }       
             count = 0 ;
@@ -103,7 +103,7 @@ public class ScheduledThread {
 			// 先存入数据库
 			String text = globaVariableBean.getQHeartBeats().poll();
 			String[] textList =  text.split("\t");
-			result = httpHandler.sendMonitorEvent(textList[0],textList[1],textList[2]);
+			result = httpHandler.sendMonitorEvent(textList[0],textList[1],textList[2],textList[3]);
 			if(result==null || result.indexOf("true")<=0){
 				statusFlag = false;
 			}else{
@@ -118,6 +118,7 @@ public class ScheduledThread {
 					cacheLog.setTime(textList[0]);
 					cacheLog.setType(textList[1]);;
 					cacheLog.setEvent(textList[2]);
+					cacheLog.setTaskName(textList[3]);
 					cacheLogDao.insertCacheLog(cacheLog);
 				} catch (Exception e) {
 					IOC.log.error(e.getMessage());
@@ -135,7 +136,7 @@ public class ScheduledThread {
 				List<CacheLog> CacheLogs = cacheLogDao.queryCacheLog();	
 				for(CacheLog cacheLog:CacheLogs){
 					//发送
-					result = httpHandler.sendMonitorEvent(cacheLog.getTime(),cacheLog.getType(),cacheLog.getEvent());
+					result = httpHandler.sendMonitorEvent(cacheLog.getTime(),cacheLog.getType(),cacheLog.getEvent(),cacheLog.getTaskName());
 					if(result==null || result.indexOf("true")<=0)
 						statusFlag = false;
 					else
@@ -200,8 +201,8 @@ public class ScheduledThread {
 								IOC.log.error(e.getMessage());
 							}
 							
-							httpHandler.sendMonitorEvent(DataUtil.getTime(),"Info","Upload Success: "+mTask.getMonitorPath());
-							IOC.log.warn("Upload Success: " + mTask.getMonitorPath());
+							httpHandler.sendMonitorEvent(DataUtil.getTime(),"Info","Upload Success: "+mTask.getMonitorPath(),mTask.getTaskName());
+							IOC.log.warn("Info: Upload Success: " + mTask.getMonitorPath());
 							
 							// 上传后删除rar文件
 							File cashPath= new File(cachFold);
