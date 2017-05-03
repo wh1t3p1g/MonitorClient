@@ -101,17 +101,17 @@ public class MonitorThread {
         try {  
             // 防篡改模式（安全模式）
             if(monitorTask.getRunMode()==2){ 
-            	qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tStart Monitor(Safe Mode): " + monitorTask.getMonitorPath());
-            	IOC.log.warn("Start Monitor(Safe Mode): " + monitorTask.getMonitorPath());
-            	qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Temp Mode: " + monitorTask.getMonitorPath());
-                IOC.log.warn("Turn To Temp Mode: " + monitorTask.getMonitorPath());
+            	qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tStart Monitor(Safe Mode): " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+            	IOC.log.warn("Info: Start Monitor(Safe Mode): " + monitorTask.getMonitorPath());
+            	qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Temp Mode: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+                IOC.log.warn("Info: Turn To Temp Mode: " + monitorTask.getMonitorPath());
                 this.listener.setMode("Temp");
             }
             // 人工模式
             else if(monitorTask.getRunMode()==1){
                 this.listener.setMode("Human");
-                qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tStart Monitor(Human Mode): " + monitorTask.getMonitorPath());
-                IOC.log.warn("Start Monitor(Human Mode): " + monitorTask.getMonitorPath());
+                qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tStart Monitor(Human Mode): " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+                IOC.log.warn("Info: Start Monitor(Human Mode): " + monitorTask.getMonitorPath());
             }
             
             watchID = JNotify.addWatch(monitorTask.getMonitorPath(), mask, watchSubtree, this.listener);  
@@ -130,7 +130,8 @@ public class MonitorThread {
             if (!res) {  
                 // invalid  
             } 
-
+           
+        	
         } catch (JNotifyException e) {
         	IOC.log.error(e.getMessage());
         }  
@@ -229,10 +230,31 @@ public class MonitorThread {
         public void modeDeal(String action,String path,String name,String time){
             
         	String filename = path+ File.separator + name;
+        	if(monitorTask.getStatus()==0){
+        		stop();
+        		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
+            	for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
+            		if(globaVariableBean.getMonitorTaskList().get(i).getTaskName().equals(monitorTask.getTaskName())){
+            			try {
+            				monitorTask.setStatus(0);
+            				globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
+    						globaVariableBean.getFileIndexDaoList().get(i).closeConnection();
+                			globaVariableBean.getQMonitorList().remove(i);
+        					globaVariableBean.getMonitorThreadList().remove(i);
+        					globaVariableBean.getBackupAndCheckThreadList().remove(i);
+        					globaVariableBean.getFileIndexDaoList().remove(i);
+        					globaVariableBean.getMonitorTaskList().remove(i);
+        					i--;
+    					} catch (Exception e) {
+    						IOC.log.error(e.getMessage());
+    					}
 
+            		}
+            	}
+        	}
             switch(mode){
             case "Human":
-                qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+                qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
                 IOC.log.warn(action+": "+filename);
                 break;
             case "Safe":
@@ -243,30 +265,30 @@ public class MonitorThread {
                     // 备份时发生文件操作，停止备份、监控、还原线程
                     if(monitorTask.getBCMode()==0){
                         IOC.log.warn(action+": "+filename);
-                        qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-                        monitorTask.setRunMode(0);
+                        qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
                         stop();
-                        qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tDon't operate files when backing up ! Stop Monitor: " + monitorTask.getMonitorPath());
-                    	IOC.log.warn("Don't operate files when backing up ! Stop Monitor: " + monitorTask.getMonitorPath());
-                    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
+                        GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
                     	for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
                     		if(globaVariableBean.getMonitorTaskList().get(i).getTaskName().equals(monitorTask.getTaskName())){
                     			try {
                     				monitorTask.setStatus(0);
                     				globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
-									globaVariableBean.getFileIndexDaoList().get(i).closeConnection();
-	                    			globaVariableBean.getQMonitorList().remove(i);
-	            					globaVariableBean.getMonitorThreadList().remove(i);
-	            					globaVariableBean.getBackupAndCheckThreadList().remove(i);
-	            					globaVariableBean.getFileIndexDaoList().remove(i);
-	            					globaVariableBean.getMonitorTaskList().remove(i);
-	            					i--;
-								} catch (Exception e) {
-									IOC.log.error(e.getMessage());
-								}
+            						globaVariableBean.getFileIndexDaoList().get(i).closeConnection();
+                        			globaVariableBean.getQMonitorList().remove(i);
+                					globaVariableBean.getMonitorThreadList().remove(i);
+                					globaVariableBean.getBackupAndCheckThreadList().remove(i);
+                					globaVariableBean.getFileIndexDaoList().remove(i);
+                					globaVariableBean.getMonitorTaskList().remove(i);
+                					i--;
+            					} catch (Exception e) {
+            						IOC.log.error(e.getMessage());
+            					}
 
                     		}
                     	}
+                        qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tDon't operate files when backing up ! Stop Monitor: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+                    	IOC.log.warn("Info: Don't operate files when backing up ! Stop Monitor: " + monitorTask.getMonitorPath());
+                    	
                     }
                     
                     // 自检
@@ -319,7 +341,7 @@ public class MonitorThread {
 
                         // 不在黑名单，即白名单里面
                         if(!blackFlag||whiteFlag){
-                            qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+                            qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
                             IOC.log.warn(action + ": " + filename);
                         }
                         break;
@@ -356,10 +378,10 @@ public class MonitorThread {
                 	// 如果flag文件中没有该文件，则进行删除
                 	if(fileIndex==null){
 	                    
-                		qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+                		qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
 	                    IOC.log.warn(action + ": " + filename);
 						FileUtil.deleteAll(new File(filename));
-						qHeartBeats.offer(time+"\t"+action+"-Machine\t"+filename+" Deal Success!");
+						qHeartBeats.offer(time+"\t"+action+"-Machine\t"+filename+" Deal Success!"+"\t"+monitorTask.getTaskName());
 						IOC.log.warn(action + "-Machine: " + filename+" Deal Success!");
 	                }
                 	
@@ -371,7 +393,7 @@ public class MonitorThread {
 	             
 	                		String sha12 = fileIndex.getSha1();
 	                		if(!sha12.equals( sha11)){
-	                			qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+	                			qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
 	                			IOC.log.warn(action + ": " + filename);
 	                			FileUtil.deleteAll(new File(filename));
 	                			qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
@@ -384,7 +406,7 @@ public class MonitorThread {
 	            else if(action.equals("Deleted")){
 	            	// 如果flag文件中有该文件，则进行还原
 		            if(fileIndex!=null){
-		            	qHeartBeats.offer(time+"\t"+action+"\t"+filename);
+		            	qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
 		            	IOC.log.warn(action + ": " + filename);
 		            	qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
 		            }
@@ -397,7 +419,7 @@ public class MonitorThread {
 	                		String sha11 = DataUtil.getSHA1ByFile(new File(filename));
 	                		String sha12 = fileIndex.getSha1();
 	                		if(!sha12.equals( sha11)){
-	                			qHeartBeats.offer(time+"\t"+action+"\t"+ filename);
+	                			qHeartBeats.offer(time+"\t"+action+"\t"+ filename+"\t"+monitorTask.getTaskName());
 	                			IOC.log.warn(action + ": " + filename);
 	                			FileUtil.deleteAll(new File(filename));
 						        qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());

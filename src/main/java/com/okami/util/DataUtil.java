@@ -179,8 +179,9 @@ public class DataUtil {
      * @return
      */
     public static List<Integer> removeDuplicate(List<Integer> arrayList){
+    	HashSet h = new HashSet(arrayList); 
         arrayList.clear(); 
-        arrayList.addAll(new HashSet(arrayList)); 
+        arrayList.addAll(h); 
     	return arrayList;
     }
     

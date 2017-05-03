@@ -148,11 +148,11 @@ public class ControlCenter {
 
 			if(!safeMonitor(monitorTask,fileIndexDao)){
 				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime() + 
-						"\tInfo\tThe Bak Index File Is Lost: " + monitorTask.getMonitorPath());
+						"\tInfo\tThe Bak Index File Is Lost: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
-						"\tInfo\tStop Monitor: " + monitorTask.getMonitorPath());
-				IOC.log.warn("The Bak Index File Is Lost: "+ monitorTask.getMonitorPath());  
-				IOC.log.warn("Stop Monitor: " + monitorTask.getMonitorPath());  
+						"\tInfo\tStop Monitor: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+				IOC.log.warn("Info: The Bak Index File Is Lost: "+ monitorTask.getMonitorPath());  
+				IOC.log.warn("Info: Stop Monitor: " + monitorTask.getMonitorPath());  
 				return false;
 			}else{
 	    		try {
@@ -217,9 +217,9 @@ public class ControlCenter {
 		else{
 			
 			// 下载服务器的文件树
-			IOC.log.warn("Searching For Bak Index File: " + monitorTask.getMonitorPath());
+			IOC.log.warn("Info: Searching For Bak Index File: " + monitorTask.getMonitorPath());
 			globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
-					"\tInfo\tSearching For Bak Index File: " + monitorTask.getMonitorPath());
+					"\tInfo\tSearching For Bak Index File: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 			File bakFlag = new File(configBean.getBakPath()+File.separator+monitorTask.getFlagName());
 			byte[] contentBytes = httpHandler.download(monitorTask.getFlagName());
 			String cachPath = configBean.getCachPath()+File.separator+monitorTask.getTaskName()+File.separator+monitorTask.getFlagName();
@@ -233,7 +233,7 @@ public class ControlCenter {
 				// 检查flag树的Sha1，与服务其那边的sha1 是否相同，不正常则恢复flag与文件
 				if(!bakFlag.exists()|| !DataUtil.getSHA1ByFile(bakFlag).equals(DataUtil.getSHA1ByFile(new File(cachPath)))){
 					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
-							"\tRepaire\tThe Bak Index File Is Inconsistent: " + monitorTask.getMonitorPath());
+							"\tRepaire\tThe Bak Index File Is Inconsistent: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 					IOC.log.warn("Repaire: The Bak Index File Is Inconsistent: " + monitorTask.getMonitorPath());
 					// 将cach下的flag文件复制到bak目录下
 					File source = new File(cachPath);
@@ -248,20 +248,23 @@ public class ControlCenter {
 					}
 					IOC.log.warn("Repaire-Machine: The Bak Index File Has Fixed: " + monitorTask.getMonitorPath());
 					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
-							"\tRepaire-Machine\tThe Bak Index File Has Fixed: " + monitorTask.getMonitorPath());
+							"\tRepaire-Machine\tThe Bak Index File Has Fixed: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 				}
 			
 			}else{
 				if(!bakFlag.exists()){
-					IOC.log.warn("The Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath());
+					IOC.log.warn("Info: The Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath());
 					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
-							"\tInfo\tThe Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath());
+							"\tInfo\tThe Bak Index Index File Is Not Exist, Stop Monitor: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 					return false;
 				}
-				IOC.log.warn("Assume That The Backup File Is Normal Without Networking Check: " + monitorTask.getMonitorPath());
+				IOC.log.warn("Info: Assume That The Backup File Is Normal Without Networking Check: " + monitorTask.getMonitorPath());
 				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
-						"\tInfo\tAssume That The Backup File Is Normal Without Networking Check: " + monitorTask.getMonitorPath());
+						"\tInfo\tAssume That The Backup File Is Normal Without Networking Check: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 			} 
+			IOC.log.warn("Info: Search Bak Index File Success: " + monitorTask.getMonitorPath());
+			globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
+					"\tInfo\tSearch Bak Index Success: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 		}
 		
 		// 连接数据库		
@@ -305,42 +308,43 @@ public class ControlCenter {
 		
 		// 读取数据库中之前的任务
 		List<MonitorTask> monitorTaskList;
-		try {
-			monitorTaskList = globaVariableBean.getMonitorTaskList();
+		
+		monitorTaskList = globaVariableBean.getMonitorTaskList();
 
-			for(int i=0;i<monitorTaskList.size();i++){
-				if(monitorTaskList.get(i).getTaskName().equals(taskName)){
-					// 关闭
-					monitorTaskList.get(i).setStatus(0);
-					
-					// 更新数据库以及关闭文件树连接
+		for(int i=0;i<monitorTaskList.size();i++){
+			if(monitorTaskList.get(i).getTaskName().equals(taskName)){
+				// 关闭
+				monitorTaskList.get(i).setStatus(0);
+				// 更新数据库以及关闭文件树连接
+				try{
 					globaVariableBean.getMonitorTaskDao().updateTask(monitorTaskList.get(i));
 					globaVariableBean.getFileIndexDaoList().get(i).closeConnection();
-					
-					
-					// 关闭监控线程
-					globaVariableBean.getMonitorThreadList().get(i).stop();
-					
-					IOC.log.warn("Stop Monitor: " + monitorTaskList.get(i).getMonitorPath());
-					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
-							"\tInfo\tStop Monitor: " + monitorTaskList.get(i).getMonitorPath());
-					
-					// 删除相应队列
-					globaVariableBean.getQMonitorList().remove(i);
-					globaVariableBean.getMonitorThreadList().remove(i);
-					globaVariableBean.getBackupAndCheckThreadList().remove(i);
-					globaVariableBean.getFileIndexDaoList().remove(i);
-					globaVariableBean.getMonitorTaskList().remove(i);
-					i--;
-
-					return true;
+				}catch (Exception e) {
+					e.printStackTrace();
+					IOC.log.error(e.getMessage());
 				}
+				
+		
+				// 关闭监控线程
+				globaVariableBean.getMonitorThreadList().get(i).stop();
+				
+				IOC.log.warn("Info: Stop Monitor: " + monitorTaskList.get(i).getMonitorPath());
+				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
+						"\tInfo\tStop Monitor: " + monitorTaskList.get(i).getMonitorPath()+"\t"+monitorTaskList.get(i).getTaskName());
+				
+				// 删除相应队列
+				globaVariableBean.getQMonitorList().remove(i);
+				globaVariableBean.getMonitorThreadList().remove(i);
+				globaVariableBean.getBackupAndCheckThreadList().remove(i);
+				globaVariableBean.getFileIndexDaoList().remove(i);
+				globaVariableBean.getMonitorTaskList().remove(i);
+				i--;
+
+				return true;
 			}
-		} catch (Exception e) {
-			e.printStackTrace();
-			IOC.log.error(e.getMessage());
 		}
-		return false;
+		
+		return true;
 	}
 	
 }
