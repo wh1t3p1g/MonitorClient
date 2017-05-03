@@ -18,3 +18,4 @@ MonitorClient.userlibraries
 log/
 storage/
 config/config.db
+config/config.ini
