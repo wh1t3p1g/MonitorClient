@@ -38,7 +38,7 @@ public class RegexEvilWords {
             Matcher m = r.matcher(content);
             if (m.find( )) {
                 System.out.println("Found value: " + m.group());
-                return entry.getKey()+":("+m.group().substring(0,20)+")";
+                return entry.getKey()+":("+m.group()+")";
             }
         }
         return "false";
