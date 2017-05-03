@@ -50,7 +50,8 @@ public class CacheLogDao implements ICacheLogDao {
 		    	String event = rs.getString("Event");
 		    	String type = rs.getString("Type");
 		    	String time = rs.getString("Time");
-		    	CacheLog cacheLog = new CacheLog(id, type, time, event);
+		    	String taskName = rs.getString("TaskName");
+		    	CacheLog cacheLog = new CacheLog(id, type, time, event,taskName);
 		    	list.add(cacheLog);
 		    }
 		    
@@ -70,7 +71,7 @@ public class CacheLogDao implements ICacheLogDao {
 	@Override
 	public boolean insertCacheLog(CacheLog cacheLog) throws Exception {
 		String sql = "INSERT INTO CacheLog " +
-				"(Event,Time,Type) VALUES (?, ?, ?)";
+				"(Event,Time,Type,TaskName) VALUES (?, ?, ?, ?)";
 		Connection conn = null;
 		
 		try {
@@ -79,6 +80,7 @@ public class CacheLogDao implements ICacheLogDao {
 			ps.setString(1, cacheLog.getEvent());
 			ps.setString(2,  cacheLog.getTime());
 			ps.setString(3,  cacheLog.getType());
+			ps.setString(4,  cacheLog.getTaskName());
 			ps.executeUpdate();
 			ps.close();
 			
@@ -129,6 +131,7 @@ public class CacheLogDao implements ICacheLogDao {
 					+ "'Event'  varchar,"
 					+ "'Time'  varchar,"
 					+ "'Type'  varchar,"
+					+ "'TaskName'  varchar,"
 					+ "PRIMARY KEY ('Id')"
 					+ ");";
 			

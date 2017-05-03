@@ -2,6 +2,8 @@ package com.okami.entities;
 
 import javax.persistence.*;
 
+import com.okami.util.DataUtil;
+
 /**
  * 缓存日志实体
  * @author orleven
@@ -24,6 +26,9 @@ public class CacheLog {
 
     @Column(name = "Time") 
     private String time;
+    
+    @Column(name = "TaskName") 
+    private String taskName;
 
     public Integer getId() {
         return id;
@@ -41,6 +46,14 @@ public class CacheLog {
         this.type = type;
     }
 
+    public String getTaskName() {
+        return taskName;
+    }
+
+    public void setTaskName(String taskName) {
+        this.taskName = taskName;
+    }
+    
     public String getEvent() {
         return event;
     }
@@ -57,11 +70,19 @@ public class CacheLog {
         this.time = time;
     }
     
-	public CacheLog(Integer id,String type,String time,String event){
+	public CacheLog(Integer id,String type,String time,String event,String taskName){
 		this.id = id;
 		this.type = type;
 		this.time = time;
 		this.event = event;
+		this.taskName = taskName;
+	}
+	
+	public void setLog(String type,String event,String taskName){
+		this.type = type;
+		this.time = DataUtil.getTime();
+		this.event = event;
+		this.taskName = taskName;
 	}
 	
 	public CacheLog(){

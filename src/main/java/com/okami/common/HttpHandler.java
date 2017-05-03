@@ -86,27 +86,13 @@ public class HttpHandler {
      * @param content
      * @return
      */
-    public String sendMonitorEvent(String time,String type,String content){
+    public String sendMonitorEvent(String time,String type,String content,String taskName){
 		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
-		String mgPostParameters = "type=" + type + "&time=" +time+"&content=" + DataUtil.urlEncode(content);
+		String mgPostParameters = "type=" + type + "&time=" +time+"&content=" + DataUtil.urlEncode(content)+"&task_name=" + taskName ;
 		HttpResponse httpResponse = WebUtil.httpPost(
 				RHost+"/Monitor/public/api/messages/add/"+configBean.getLhost(),
 				headers,mgPostParameters);
-		String result = WebUtil.getResponseBody(httpResponse);
-    	if(result==null || result.indexOf("true")<=0){
-    		// 存入数据库
-			try {
-				CacheLog cacheLog = new CacheLog();
-				cacheLog.setTime(time);
-				cacheLog.setType(type);;
-				cacheLog.setEvent(content);
-				cacheLogDao.insertCacheLog(cacheLog);
-			} catch (Exception e) {
-				IOC.log.error(e.getMessage());
-			}
-    		
-   		}
-		return result;
+		return WebUtil.getResponseBody(httpResponse);
     }
     
 
@@ -180,7 +166,7 @@ public class HttpHandler {
 			result = WebUtil.getResponseBodyBytes(httpResponse);
 			i--;
 		}
-		if(result==null||result.toString().equals("not found")){
+		if(result==null||(new String(result)).equals("not found")){
 			return null;
 		}
 

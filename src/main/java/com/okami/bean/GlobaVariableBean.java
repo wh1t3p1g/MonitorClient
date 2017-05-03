@@ -14,6 +14,7 @@ import com.okami.core.BackupAndCheckThread;
 import com.okami.core.MonitorThread;
 import com.okami.dao.impl.FileIndexDao;
 import com.okami.dao.impl.MonitorTaskDao;
+import com.okami.entities.CacheLog;
 import com.okami.entities.MonitorTask;
 
 /**
