@@ -59,14 +59,18 @@ public class ScannerApplication implements Runnable{
         globalBean.setTaskName(task.getTaskName());
         //枚举所有文件
         enumFiles.setTask(task);
-        List<FileContent> fileContents=enumFiles.run();
-        task.setFileContents(fileContents);
-        MonitorClientApplication.log.info("共"+fileContents.size()+"待扫描文件");
-        //分配scanner
-        assignScanner.setTask(task);
-        globalBean.setStatus(assignScanner.assignTask());//返回分配结果
-        // result通知服务器端
-        // todo
+        try{
+            List<FileContent> fileContents=enumFiles.run();
+            task.setFileContents(fileContents);
+            MonitorClientApplication.log.info("共"+fileContents.size()+"待扫描文件");
+            //分配scanner
+            assignScanner.setTask(task);
+            globalBean.setStatus(assignScanner.assignTask());//返回分配结果
+            // result通知服务器端
+        }catch (Exception e){
+            MonitorClientApplication.log.error(e.getMessage());
+            globalBean.setStatus(0);
+        }
     }
 
     public void start () {
