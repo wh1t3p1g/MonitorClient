@@ -3,16 +3,19 @@ package com.okami.core;
 
 import java.io.File;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
+import com.okami.common.AESHander;
 import com.okami.common.HttpHandler;
 import com.okami.config.DBConfig;
 import com.okami.dao.impl.CacheLogDao;
 import com.okami.entities.CacheLog;
+import com.okami.entities.DataConfig;
 import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
@@ -25,6 +28,9 @@ public class ScheduledThread {
     
     @Autowired
     private GlobaVariableBean globaVariableBean;
+    
+    @Autowired
+    private AESHander aESHander;
     
     private int count = -0 ;
     
@@ -57,21 +63,60 @@ public class ScheduledThread {
      * @data 2017年5月1日
      */
     public void sendHB(){
-    	
+    	if(!httpHandler.getFlag()){
+    		httpHandler.init();
+    	}
+    	String result = null;
         nowTime = new Date();
         lastTime = nowTime;
-        if (count >=  configBean.getDelay()/60 || count ==-1 ){
+        if (count >=  configBean.getDelay()/10 || count ==-1 ){
             if(count == -1){
             	IOC.log.warn(String.format("Info: Connecting Server (%s:%s) ...",configBean.getRhost(),configBean.getRport()));
-
             }
-            String result = null;;
             result = httpHandler.sendHB();
-            if(result==null || result.indexOf("success")<=0){
-                statusFlag = false; 
+            if(result!=null ){
+            	HashMap<String,Object> text  = null;
+            	int status ;
+            	try{
+            		text = DataUtil.fromJson(result);
+            		status = (new Double((Double)text.get("status"))).intValue();
+            	}catch(Exception e){
+            		status = -1;
+            	}
+            	
+                
+                if(status==1){
+                    statusFlag = true; 
+                }else if (status == 2||status == 3){
+                    statusFlag = true;
+                   	String key = text.get("_").toString().substring(0,16);
+                	String iv =  text.get("_").toString().substring(16);
+                	DataConfig dataConfig = new DataConfig(1,key,iv);
+					try {
+						aESHander.AESInit(key, iv);
+					} catch (Exception e1) {
+						e1.printStackTrace();
+					}
+                    try {
+                    	if(globaVariableBean.getDataConfigDao().queryDataConfig()!=null){
+                    		globaVariableBean.getDataConfigDao().updateDataConfig(dataConfig);
+                    	}
+                    	else{
+                    		globaVariableBean.getDataConfigDao().insertDataConfig(dataConfig);
+                    	}
+    				} catch (Exception e) {
+    					
+    				}
+                    httpHandler.setHbPostParameters(); 
+                    result = httpHandler.sendHB();
+                }else{
+                	statusFlag = false; 
+                }
             }else{
-                statusFlag = true;
+            	statusFlag = false; 
             }
+            
+            
             if(count ==-1){
                 diffFlag = !statusFlag;
             }
@@ -113,7 +158,6 @@ public class ScheduledThread {
 			// 网络不通则存入数据库
 			if(!statusFlag){
 				try {
-
 					CacheLog cacheLog = new CacheLog();
 					cacheLog.setTime(textList[0]);
 					cacheLog.setType(textList[1]);;
@@ -167,7 +211,7 @@ public class ScheduledThread {
 				for(MonitorTask mTask:globaVariableBean.getMonitorTaskDao().queryTask()){
 					if(mTask.getUpload()==0&&mTask.getBCMode()==1){
 						// 上传rar文件
-						String cachFold = configBean.getCachPath() + File.separator + mTask.getFlagName();
+						String cachFold = configBean.getCachPath() + File.separator + mTask.getTaskName();
 						File[] files = new File(cachFold).listFiles();
 						for(File file:files){
 							result = httpHandler.upload(file);
@@ -219,9 +263,9 @@ public class ScheduledThread {
 		}
     }
     
-    @Scheduled(fixedDelay=60*1000) 
+    @Scheduled(fixedDelay=10*1000) 
     public void heartbeats() {
-        // 发生心跳
+    	// 发生心跳
     	sendHB();
 
     	// 有消息推送过来

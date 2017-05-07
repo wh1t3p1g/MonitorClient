@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
+import com.okami.bean.RequrieBean;
 import com.okami.config.DBConfig;
 import com.okami.dao.impl.FileIndexDao;
 import com.okami.entities.FileIndex;
@@ -35,10 +36,9 @@ public class MonitorThread {
     // 队列
     private Queue<String> qHeartBeats;
     private Queue<String> qMonitor;
-    private Queue<String> qRepaire;
+    private Queue<RequrieBean> qRepaire;
     
     // 线程属性配置
-    private String name;
     private Listener listener;
     private int watchID;
     private int state;
@@ -54,7 +54,7 @@ public class MonitorThread {
         return true;
     }
     
-    public void setQqueue(Queue<String> qHeartBeats,Queue<String> qMonitor,Queue<String> qRepaire){
+    public void setQqueue(Queue<String> qHeartBeats,Queue<String> qMonitor,Queue<RequrieBean> qRepaire){
         this.qHeartBeats = qHeartBeats;
         this.qMonitor = qMonitor;
         this.qRepaire = qRepaire;
@@ -77,7 +77,7 @@ public class MonitorThread {
         this.listener.setQMonitor(qMonitor);
     }
     
-    public void setQRepaire(Queue<String> qRepaire){
+    public void setQRepaire(Queue<RequrieBean> qRepaire){
         this.qRepaire = qRepaire;
         this.listener.setQRepaire(qRepaire);
     }
@@ -86,14 +86,7 @@ public class MonitorThread {
     public int  getState(){
         return state;
     }
-    
-    public String  getName(){
-        return this.name;
-    }
-    
-    public void  setName(String name){
-        this.name = name;
-    }
+   
 
     public boolean start() {  
         int mask = JNotify.FILE_CREATED | JNotify.FILE_DELETED | JNotify.FILE_MODIFIED | JNotify.FILE_RENAMED;  
@@ -130,7 +123,10 @@ public class MonitorThread {
             if (!res) {  
                 // invalid  
             } 
-           
+            monitorTask.setStatus(0);
+			IOC.log.warn("Info: Stop Monitor: " +monitorTask.getMonitorPath());
+			qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tStop Monitor: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+			
         	
         } catch (JNotifyException e) {
         	IOC.log.error(e.getMessage());
@@ -153,7 +149,7 @@ public class MonitorThread {
         private String mode;
         private Queue<String> qHeartBeats;
         private Queue<String> qMonitor;
-        private Queue<String> qRepaire;
+        private Queue<RequrieBean> qRepaire;
 
         
         public Listener(MonitorTask monitorTask,FileIndexDao fileIndexDao){
@@ -184,11 +180,11 @@ public class MonitorThread {
             this.qMonitor = qMonitor;
         }
         
-        public void setQRepaire(Queue<String> qRepaire){
+        public void setQRepaire(Queue<RequrieBean> qRepaire){
             this.qRepaire = qRepaire;
         }
         
-        public void setQqueue(Queue<String> qHeartBeats,Queue<String> qMonitor,Queue<String> qRepaire){
+        public void setQqueue(Queue<String> qHeartBeats,Queue<String> qMonitor,Queue<RequrieBean> qRepaire){
             this.qHeartBeats = qHeartBeats;
             this.qMonitor = qMonitor;
             this.qRepaire = qRepaire;
@@ -201,23 +197,25 @@ public class MonitorThread {
     
         public void fileRenamed(int wd, String rootPath, String oldName, String newName) {  
             String time = DataUtil.getTime();
-            modeDeal("Created",rootPath,newName,time);
-            modeDeal("Deleted",rootPath,oldName,time);
+            // rename 
+            modeDeal(time,"Renamed",rootPath,oldName,newName);
+//            modeDeal("Deleted",rootPath,oldName,time);
+//            modeDeal("Created",rootPath,oldName,time);
         }  
   
         public void fileModified(int wd, String rootPath, String name) {    
             String time = DataUtil.getTime();
-            modeDeal("Modified",rootPath,name,time);  
+            modeDeal(time,"Modified",rootPath,name,null);  
         }  
   
         public void fileDeleted(int wd, String rootPath, String name) {  
             String time = DataUtil.getTime();
-            modeDeal("Deleted",rootPath,name,time);
+            modeDeal(time,"Deleted",rootPath,name,null);
         }  
   
         public void fileCreated(int wd, String rootPath, String name) {  
             String time = DataUtil.getTime();
-            modeDeal("Created",rootPath,name,time);
+            modeDeal(time,"Created",rootPath,name,null);
         }  
   
         /**
@@ -227,80 +225,47 @@ public class MonitorThread {
          * @param name
          * @param time
          */
-        public void modeDeal(String action,String path,String name,String time){
+        public void modeDeal(String time,String action,String path, String oldName, String newName){
             
-        	String filename = path+ File.separator + name;
+        	String oldFilename = path+ File.separator + oldName;
+        	String newFilename = null;
+        	if(newName!=null){
+        		newFilename = path+ File.separator + newName;
+        	}
         	if(monitorTask.getStatus()==0){
-        		stop();
-        		GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
-            	for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
-            		if(globaVariableBean.getMonitorTaskList().get(i).getTaskName().equals(monitorTask.getTaskName())){
-            			try {
-            				monitorTask.setStatus(0);
-            				globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
-    						globaVariableBean.getFileIndexDaoList().get(i).closeConnection();
-                			globaVariableBean.getQMonitorList().remove(i);
-        					globaVariableBean.getMonitorThreadList().remove(i);
-        					globaVariableBean.getBackupAndCheckThreadList().remove(i);
-        					globaVariableBean.getFileIndexDaoList().remove(i);
-        					globaVariableBean.getMonitorTaskList().remove(i);
-        					i--;
-    					} catch (Exception e) {
-    						IOC.log.error(e.getMessage());
-    					}
-
-            		}
-            	}
+        		ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
+        		controlCenter.stopMonitor(monitorTask.getTaskName());
         	}
             switch(mode){
             case "Human":
-                qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
-                IOC.log.warn(action+": "+filename);
+                qHeartBeats.offer(time+"\t"+action+"\t"+oldFilename+"\t"+monitorTask.getTaskName());
+                IOC.log.warn(action+": "+oldFilename);
                 break;
             case "Safe":
-                checkNameList(time,action,filename);
+                checkNameList(time,action,oldFilename,newFilename);
                 break;
             case "Temp":
                 if(qMonitor.isEmpty()){
                     // 备份时发生文件操作，停止备份、监控、还原线程
                     if(monitorTask.getBCMode()==0){
-                        IOC.log.warn(action+": "+filename);
-                        qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
-                        stop();
-                        GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
-                    	for(int i=0;i<globaVariableBean.getMonitorTaskList().size();i++){
-                    		if(globaVariableBean.getMonitorTaskList().get(i).getTaskName().equals(monitorTask.getTaskName())){
-                    			try {
-                    				monitorTask.setStatus(0);
-                    				globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
-            						globaVariableBean.getFileIndexDaoList().get(i).closeConnection();
-                        			globaVariableBean.getQMonitorList().remove(i);
-                					globaVariableBean.getMonitorThreadList().remove(i);
-                					globaVariableBean.getBackupAndCheckThreadList().remove(i);
-                					globaVariableBean.getFileIndexDaoList().remove(i);
-                					globaVariableBean.getMonitorTaskList().remove(i);
-                					i--;
-            					} catch (Exception e) {
-            						IOC.log.error(e.getMessage());
-            					}
-
-                    		}
-                    	}
-                        qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tDon't operate files when backing up ! Stop Monitor: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
-                    	IOC.log.warn("Info: Don't operate files when backing up ! Stop Monitor: " + monitorTask.getMonitorPath());
-                    	
+                        IOC.log.warn(action+": "+oldFilename);
+                        qHeartBeats.offer(time+"\t"+action+"\t"+oldFilename+"\t"+monitorTask.getTaskName());
+                        qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tDon't operate files when backing up: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+                    	IOC.log.warn("Info: Don't operate files when backing up:" + monitorTask.getMonitorPath());
+                		ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
+                		controlCenter.stopMonitor(monitorTask.getTaskName());
                     }
                     
                     // 自检
                     else{
-                        checkNameList(time,action,filename);
+                        checkNameList(time,action,oldFilename,newFilename);
                     }
                 }else{
                     if(qMonitor.poll() == "True"){
                         
                         mode = "Safe";
                     }
-                    checkNameList(time,action,filename);
+                    checkNameList(time,action,oldFilename,newFilename);
                 }
                 break;
             default:
@@ -315,7 +280,7 @@ public class MonitorThread {
          * @param path
          * @param name
          */
-        public void checkNameList(String time,String action,String filename){
+        public void checkNameList(String time,String action,String filename,String newFilename){
             // 安全模式
 
             if(mode.equals("Safe")){
@@ -333,7 +298,7 @@ public class MonitorThread {
                                 // 黑名单
                                 if(suffix.indexOf(blackList[j].toLowerCase())>=0){
                                     blackFlag = true;
-                                    repaire(time,action,filename );
+                                    repaire(time,action,filename,newFilename);
                                     break;
                                 }
                             }
@@ -350,54 +315,42 @@ public class MonitorThread {
                 
                 // 不在白名单
                 if(!whiteFlag){
-                  repaire(time,action,filename);
+                  repaire(time,action,filename,newFilename);
                 }
             }
             
             // 自检模式
             else{
-              repaire(time,action,filename);
+              repaire(time,action,filename,newFilename);
             }
         }
         
         /**
          * 修复函数
          */
-        public void repaire(String time,String action,String filename) {
-        	
-    	    List<FileIndex> fileIndexList = new ArrayList<FileIndex>();
+        public void repaire(String time,String action,String filename,String newFilename) {
+        
         	try {
         		// 默认选择第一个，以后如果有版本区别的话再根据版本查询
         		String indexPath = filename.substring(monitorTask.getMonitorPath().length());  // 数据库中的path
-        		fileIndexList = fileIndexDao.queryIndexByPath(indexPath);
-        		FileIndex fileIndex = fileIndexList.size()>0? fileIndexList.get(0):null;
+        		FileIndex fileIndex = fileIndexDao.queryIndexByPath(indexPath);
 				
                 // 检测到文件被创建
                 if(action.equals("Created")){
-                	
                 	// 如果flag文件中没有该文件，则进行删除
                 	if(fileIndex==null){
-	                    
-                		qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
-	                    IOC.log.warn(action + ": " + filename);
-						FileUtil.deleteAll(new File(filename));
-						qHeartBeats.offer(time+"\t"+action+"-Machine\t"+filename+" Deal Success!"+"\t"+monitorTask.getTaskName());
-						IOC.log.warn(action + "-Machine: " + filename+" Deal Success!");
+                		qRepaire.offer(new RequrieBean(action, time,monitorTask.getMonitorPath(),indexPath ,"", monitorTask.getTaskName()));
+//						qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
 	                }
-                	
 	                // flag文件中存在，则进行md5校验
 	                else{
 	                	if(fileIndex.getType().equals("File")){
-	         
-	                		String sha11 = DataUtil.getSHA1ByFile(new File(filename));
-	             
-	                		String sha12 = fileIndex.getSha1();
-	                		if(!sha12.equals( sha11)){
-	                			qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
-	                			IOC.log.warn(action + ": " + filename);
-	                			FileUtil.deleteAll(new File(filename));
-	                			qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
-							}
+//	                		String sha11 = DataUtil.getSHA1ByFile(new File(filename));
+//	                		String sha12 = fileIndex.getSha1();
+//	                		if(!sha12.equals( sha11)){
+	                			qRepaire.offer(new RequrieBean(action, time,monitorTask.getMonitorPath(),indexPath ,fileIndex.getSha1(), monitorTask.getTaskName()));
+//	                			qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
+//							}
 		                }
 	                }
                 }
@@ -406,9 +359,8 @@ public class MonitorThread {
 	            else if(action.equals("Deleted")){
 	            	// 如果flag文件中有该文件，则进行还原
 		            if(fileIndex!=null){
-		            	qHeartBeats.offer(time+"\t"+action+"\t"+filename+"\t"+monitorTask.getTaskName());
-		            	IOC.log.warn(action + ": " + filename);
-		            	qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
+		            	qRepaire.offer(new RequrieBean(action, time,monitorTask.getMonitorPath(),indexPath ,fileIndex.getSha1(), monitorTask.getTaskName()));
+//		            	qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
 		            }
 	            }
                 
@@ -416,15 +368,24 @@ public class MonitorThread {
 	            	// 如果flag文件中有该文件，则进行还原
 	            	if(fileIndex!=null){
 	                	if(fileIndex.getType().equals("File")){
-	                		String sha11 = DataUtil.getSHA1ByFile(new File(filename));
-	                		String sha12 = fileIndex.getSha1();
-	                		if(!sha12.equals( sha11)){
-	                			qHeartBeats.offer(time+"\t"+action+"\t"+ filename+"\t"+monitorTask.getTaskName());
-	                			IOC.log.warn(action + ": " + filename);
-	                			FileUtil.deleteAll(new File(filename));
-						        qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
-							}
+//	                		String sha11 = DataUtil.getSHA1ByFile(new File(filename));
+//	                		String sha12 = fileIndex.getSha1();
+//	                		if(!sha12.equals( sha11)){
+	                			qRepaire.offer(new RequrieBean(action, time,monitorTask.getMonitorPath(),indexPath ,fileIndex.getSha1(), monitorTask.getTaskName()));
+//	                			qRepaire.offer("Restore\t"+action+"\t"+monitorTask.getMonitorPath()+"\t"+indexPath+"\t"+monitorTask.getTaskName());
+//							}
 		                }
+	            	}
+	            }
+                
+	            else if(action.equals("Renamed")){
+	            	if(fileIndex!=null){
+	            		qHeartBeats.offer(time+"\t"+action+"\t"+ filename+" To "+newFilename+"\t"+monitorTask.getTaskName());
+            			IOC.log.warn(action + ": " + filename+"s To "+newFilename);
+            			File file = new File(newFilename);
+            			file.renameTo(new File(filename));
+            			qHeartBeats.offer(time+"\t"+action+"-Machine\t"+filename+" To "+newFilename+" Deal Success!"+"\t"+monitorTask.getTaskName());
+						IOC.log.warn(action + "-Machine: " + filename+" To "+newFilename+" Deal Success!");
 	            	}
 	            }
                 
@@ -435,99 +396,6 @@ public class MonitorThread {
 
         	}
 
-//              
-//              // 如果flag文件中没有该文件，则进行删除
-//              if(key==null){
-//                  qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-//                  qRepaire.offer("Delete\t"+action+"\t"+filename);
-//              }
-//              
-//              // flag文件中存在，则进行md5校验
-//              else{
-//                  String[] values = key.split("\\|");
-//                  File webFile = new File(filename);
-//                  File bakFile = new File(values[values.length-1]);
-//                  if(webFile.isFile()){
-//                      try {
-//                          String md51 = DataUtil.getMd5ByFile(webFile);
-//                          String md52 = values[1];
-//                          String md53 = bakFile.getName();
-//                          String md54 = DataUtil.getMD5(ZLibUtils.decompress(Files.readAllBytes(Paths.get(values[values.length-1]))));
-//                          if(md52.equals( md53)&&md52.equals( md54)){
-//                              if(!md51.equals(md52)){
-//                                  qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-//                                  qRepaire.offer("Restore\t"+action+"\t"+filename);
-//                              }
-//                          }else{      
-//                              System.out.println("文件出现异常！329");
-//                          }
-//                      } catch (IOException e) {
-//                          e.printStackTrace();
-//                      }
-//                  }else if(webFile.isDirectory()){
-//                          String md51 = DataUtil.getMD5(Paths.get(filename).getFileName().toString());
-//                      String md52 = values[1];
-//                      String md53 = bakFile.getName();
-//                      if(md52.equals( md53)){
-//                          if(!md51.equals(md52)){
-//                              qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-//                              System.out.println("md51:"+md51);
-//                              System.out.println("md52:"+md52);
-//                              System.out.println("md53:"+md53);
-//                              qRepaire.offer("Restore\t"+action+"\t"+filename);
-//                          }
-//                      }else{
-//                          System.out.println("文件出现异常！343");
-//                      }
-//                  }
-//              }
-//          }
-//          else if(action.equals("Deleted")){
-//              // 如果flag文件中有该文件，则进行还原
-//              if(key!=null){
-//                  qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-//                  qRepaire.offer("Restore\t"+action+"\t"+filename);
-//              }
-//          }
-//          
-//          else if(action.equals("Modified")){
-//              // 如果flag文件中有该文件，则进行还原
-//              if(key!=null){
-//                  String[] values = key.split("\\|");
-//                  File webFile = new File(filename);
-//                  File bakFile = new File(values[values.length-1]);
-//                  if(webFile.isFile()){
-//                      try {
-//                          String md51 = DataUtil.getMd5ByFile(webFile);
-//                          String md52 = values[1];
-//                          String md53 = bakFile.getName();
-//                          String md54 = DataUtil.getMD5(ZLibUtils.decompress(Files.readAllBytes(Paths.get(values[values.length-1]))));
-//                          
-//                          if(md52.equals( md53)&&md52.equals( md54)){
-//                              if(!md51.equals(md52)){
-//                                  qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-//                                  qRepaire.offer("Restore\t"+action+"\t"+filename);
-//                              }
-//                          }else{
-//                              System.out.println("文件出现异常！374");
-//                          }
-//                      } catch (IOException e) {
-//                          e.printStackTrace();
-//                      }
-//                  }else if(webFile.isDirectory()){
-//                          String md51 = DataUtil.getMD5(Paths.get(filename).getFileName().toString());
-//                      String md52 = values[1];
-//                      String md53 = bakFile.getName();
-//                      if(md52.equals( md53)){
-//                          if(!md51.equals(md52)){
-//                              qHeartBeats.offer(time+"\t"+action+"\t"+filename);
-//                              qRepaire.offer("Restore\t"+action+"\t"+filename);
-//                          }
-//                      }else{
-//                          System.out.println("文件出现异常！388");
-//                      }
-//                  }
-//              }
         }
     }  
 }  

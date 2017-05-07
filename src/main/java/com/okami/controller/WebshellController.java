@@ -2,6 +2,7 @@ package com.okami.controller;
 
 import com.okami.MonitorClientApplication;
 import com.okami.bean.GlobalBean;
+import com.okami.common.AESHander;
 import com.okami.plugin.ScannerApplication;
 import com.okami.plugin.scanner.bean.BaseTask;
 import com.okami.plugin.scanner.bean.FileContent;
@@ -10,6 +11,7 @@ import com.okami.plugin.scanner.core.common.EnumFiles;
 import com.okami.plugin.scanner.core.trainer.GenerateArff;
 import com.okami.plugin.scanner.core.trainer.NavieBayesClassifier;
 import com.okami.plugin.scanner.core.trainer.TrainerDataSet;
+import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,9 +37,18 @@ public class WebshellController {
     private GlobalBean globalBean;
 
     private ScannerApplication scannerApplication;
+    
+    @Autowired
+    private AESHander aESHander;
 
     @RequestMapping(value="/webshell/task/new",method=RequestMethod.POST)
     public String newTask(HttpServletRequest request){
+    	int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+    	if( Math.abs(_1 - _) >60){
+    		 return "Are You Really A Member Of The Organization?";
+    	}
+    	
         if(globalBean.getStatus()==1){
             return "Task "+globalBean.getTaskName()+" is running";
         }else{
@@ -51,15 +62,22 @@ public class WebshellController {
             task.setExceptExtension(request.getParameter("except_extension"));
             task.setScriptExtension(request.getParameter("script_extension"));
             task.setFilter(true);
-            task.setType(Integer.parseInt(request.getParameter("type")));
-            task.setMode(Integer.parseInt(request.getParameter("mode")));
+            task.setType(Integer.parseInt(DataUtil.decode(request.getParameter("type"),aESHander)));
+            task.setMode(Integer.parseInt(DataUtil.decode(request.getParameter("mode"),aESHander)));
             scannerApplication.setTask(task);
             scannerApplication.start();
             return "Task "+task.getTaskName()+" ok";
         }
     }
     @RequestMapping(value="/webshell/task/stop",method=RequestMethod.GET)
-    public String stopTask(){
+    public String stopTask(HttpServletRequest request){
+    	int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+    	if( Math.abs(_1 - _) >60){
+    		 return "Are You Really A Member Of The Organization?";
+    	}
+    	
+    	
         if(globalBean.getStatus()==1){
             globalBean.getT().interrupt();
             globalBean.setStatus(0);

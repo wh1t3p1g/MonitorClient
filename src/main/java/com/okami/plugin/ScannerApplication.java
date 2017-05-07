@@ -54,6 +54,7 @@ public class ScannerApplication implements Runnable{
         if(globalBean.getStatus()==1){//检查是否是在运行
             return ;//0 表示正在运行
         }
+        task.decodeAll();
         globalBean.setStatus(1);
         globalBean.setTaskId(task.getTaskId());
         globalBean.setTaskName(task.getTaskName());
@@ -71,9 +72,13 @@ public class ScannerApplication implements Runnable{
 
     public void start () {
         if (t == null) {
-            t = new Thread (this);
-            globalBean.setT(t);
-            t.start ();
+        	try{
+	            t = new Thread (this);
+	            globalBean.setT(t);
+	            t.start ();
+        	}catch(Exception e){
+        		t.interrupt();
+        	}
         }
     }
 

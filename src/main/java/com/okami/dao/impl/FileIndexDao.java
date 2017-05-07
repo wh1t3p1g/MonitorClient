@@ -72,7 +72,7 @@ public class FileIndexDao implements IFileIndexDao{
 	    	int read = rs.getInt("Read");
 	    	int write = rs.getInt("Write");
 	    	int exec = rs.getInt("Exec");
-	    	int rarId = rs.getInt("RarId");
+	    	String rarId = rs.getString("RarId");
 	    	FileIndex fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
 	    	list.add(fileIndex);
 	    }
@@ -101,7 +101,7 @@ public class FileIndexDao implements IFileIndexDao{
 			ps.setInt(9,  fileIndex.getRead());
 			ps.setInt(10,  fileIndex.getWrite());
 			ps.setInt(11,  fileIndex.getExec());
-			ps.setInt(12,  fileIndex.getRarId());
+			ps.setString(12,  fileIndex.getRarId());
 			ps.executeUpdate();
 			ps.close();
 			
@@ -141,7 +141,7 @@ public class FileIndexDao implements IFileIndexDao{
 				ps.setInt(9,  fileIndexList.get(i).getRead());
 				ps.setInt(10,  fileIndexList.get(i).getWrite());
 				ps.setInt(11,  fileIndexList.get(i).getExec());
-				ps.setInt(12,  fileIndexList.get(i).getRarId());
+				ps.setString(12,  fileIndexList.get(i).getRarId());
 				ps.executeUpdate();
 			}
 			ps.close();
@@ -177,7 +177,7 @@ public class FileIndexDao implements IFileIndexDao{
 			ps.setInt(8,  fileIndex.getRead());
 			ps.setInt(9,  fileIndex.getWrite());
 			ps.setInt(10,  fileIndex.getExec());
-			ps.setInt(11,  fileIndex.getRarId());
+			ps.setString(11,  fileIndex.getRarId());
 			ps.setString(12, fileIndex.getPath());
 			ps.executeUpdate();
 			ps.close();
@@ -237,7 +237,7 @@ public class FileIndexDao implements IFileIndexDao{
 				+ "'Owner'  TEXT,"
 				+ "'OwnerGroup'  TEXT,"
 				+ "'Status'  INTEGER NOT NULL,"
-				+ "'RarId'  INTEGER"
+				+ "'RarId'  TEXT"
 				+ ");";
 //		Connection conn = null;
 //		
@@ -287,15 +287,15 @@ public class FileIndexDao implements IFileIndexDao{
 
 
 	@Override
-	public List<FileIndex> queryIndexByPath(String pathname) throws Exception {
+	public FileIndex queryIndexByPath(String pathname) throws Exception {
 		checkConnect();
 		
 		String sql = "Select * from FileIndex where Path = ?";
 		PreparedStatement ps = conn.prepareStatement(sql);
 		ps.setString(1, pathname);
-	    List<FileIndex> list = new ArrayList<FileIndex>();
+	    FileIndex FileIndex = null;
 		ResultSet rs = ps.executeQuery();
-		while (rs.next()) {
+		if (rs.next()) {
 		    Integer id = rs.getInt("Id");
 		    String path = rs.getString("Path");
 	    	String sha1 = rs.getString("Sha1");
@@ -308,13 +308,12 @@ public class FileIndexDao implements IFileIndexDao{
 	    	int read = rs.getInt("Read");
 	    	int write = rs.getInt("Write");
 	    	int exec = rs.getInt("Exec");
-	    	int rarId = rs.getInt("RarId");
-	    	FileIndex fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
-	    	list.add(fileIndex);
+	    	String rarId = rs.getString("RarId");
+	    	FileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
 		}
 		rs.close();
 		ps.close();
-		return list;
+		return FileIndex;
 	}
 
 
@@ -340,7 +339,7 @@ public class FileIndexDao implements IFileIndexDao{
 	    	int read = rs.getInt("Read");
 	    	int write = rs.getInt("Write");
 	    	int exec = rs.getInt("Exec");
-	    	int rarId = rs.getInt("RarId");
+	    	String rarId = rs.getString("RarId");
 	    	FileIndex fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
 	    	list.add(fileIndex);
 		}
@@ -385,7 +384,7 @@ public class FileIndexDao implements IFileIndexDao{
 	    	int read = rs.getInt("Read");
 	    	int write = rs.getInt("Write");
 	    	int exec = rs.getInt("Exec");
-	    	int rarId = rs.getInt("RarId");
+	    	String rarId = rs.getString("RarId");
 	    	fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
 		}
 		rs.close();
@@ -451,6 +450,38 @@ public class FileIndexDao implements IFileIndexDao{
 		ps.close();
 			
 		return true;
+	}
+
+
+	@Override
+	public List<FileIndex> queryIndexBySHA1(String Sha1) throws Exception {
+		checkConnect();
+		String sql = "Select * from FileIndex where Sha1 = ?";
+		PreparedStatement ps = conn.prepareStatement(sql);
+		ps.setString(1, Sha1);
+	    FileIndex fileIndex  = null;
+		ResultSet rs = ps.executeQuery();
+		List<FileIndex> list = new ArrayList<FileIndex>();
+		while (rs.next()) {
+		    Integer id = rs.getInt("Id");
+		    String path = rs.getString("Path");
+	    	String sha1 = rs.getString("Sha1");
+	    	String size = rs.getString("Size");
+	    	String type = rs.getString("Type");
+	    	String time = rs.getString("Time");
+	    	String owner = rs.getString("Owner");
+	    	String group = rs.getString("OwnerGroup");
+	    	int status = rs.getInt("Status");
+	    	int read = rs.getInt("Read");
+	    	int write = rs.getInt("Write");
+	    	int exec = rs.getInt("Exec");
+	    	String rarId = rs.getString("RarId");
+	    	fileIndex = new FileIndex(id, path, sha1, size, type, time, owner, group, status,read,write,exec,rarId);
+	    	list.add(fileIndex);
+		}
+		rs.close();
+		ps.close();
+		return list;
 	}
 
 }

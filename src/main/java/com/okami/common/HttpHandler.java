@@ -9,6 +9,7 @@ import com.okami.config.DBConfig;
 import com.okami.core.IOC;
 import com.okami.dao.impl.CacheLogDao;
 import com.okami.entities.CacheLog;
+import com.okami.entities.DataConfig;
 import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.IniUtil;
@@ -16,6 +17,7 @@ import com.okami.util.WebUtil;
 import com.okami.util.FileUtil;
 
 import java.io.File;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,13 +37,33 @@ public class HttpHandler {
     
     @Autowired
     private GlobaVariableBean globaVariableBean;
-
-    private String RHost;
     
-    private String hbPostParameters ;
+    @Autowired
+    private AESHander aESHander;
     
     private CacheLogDao cacheLogDao ; 
 
+    private String remoteHost;
+    
+    private String hbPostParameters ;
+    
+    private String hbUrl ;
+    
+    private String messageUrl ;
+    
+    private String monitorUrl;
+    
+    private String upUrl;
+    
+    private String downUrl;
+    
+    private String lhost;
+    private String lport;
+    private String storagePath;
+    private String monitorPathList;
+    
+    private boolean flag = false;
+    
     public HttpHandler(){
     	headers = new HashMap<String, String>();
     	headers.put("Charsert", "UTF-8");
@@ -49,20 +71,45 @@ public class HttpHandler {
     	headers.put("Accept", "*/*");
     	headers.put("Accept-Encoding", "gzip, deflate");
     	
-		Map<String,String> config = IniUtil.getConfig(System.getProperty("user.dir") + File.separator + "config/config.ini");
-		try {
-			RHost="http://"+config.get("rhost")+":"+config.get("rport");
-	    	hbPostParameters = "ip="+config.get("lhost")+
-					"&port="+config.get("lport")+
-					"&delay="+String.valueOf(Integer.valueOf( config.get("delay")).intValue()/60)+
-					"&storage_path=" + config.get("storagePath") +
-					"&web_root_path=" + config.get("monitorPathList" );
-		} catch (NumberFormatException e) {
-		    IOC.log.error(e.getMessage());
-		}
+    	Map<String,String> config = IniUtil.getConfig(System.getProperty("user.dir") + File.separator + "config/config.ini");
+    	remoteHost="http://"+config.get("rhost")+":"+config.get("rport");	
+    	lhost = config.get("lhost");
+    	lport = config.get("lport");
+    	storagePath = config.get("storagePath");
+    	monitorPathList = config.get("monitorPathList");
+    	hbPostParameters = "ip="+lhost+"&port="+lport;
+
+    	hbUrl = remoteHost+"/Monitor/public/api/heartbeat";
+    	messageUrl = remoteHost+"/Monitor/public/api/messages/scan/"+config.get("lhost");
+    	monitorUrl = remoteHost+"/Monitor/public/api/messages/add/"+config.get("lhost");
+    	upUrl= remoteHost+"/Monitor/public/upload/up";
+    	downUrl = remoteHost+"/Monitor/public/download/";
+    	
 		cacheLogDao = new CacheLogDao();
 		cacheLogDao.setDataSource(new DBConfig().dataSource());
     }
+
+    public void init(){
+    	try {
+    		DataConfig DataConfig = globaVariableBean.getDataConfigDao().queryDataConfig();
+    		if(DataConfig!=null){
+    			aESHander.AESInit(DataConfig.getKey(),DataConfig.getIv());
+    		}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+    	
+    	
+		flag = true;
+    }
+    
+    public void setHbPostParameters(){
+    	hbPostParameters = "ip="+lhost+"&port="+lport+
+				"&storage_path=" + DataUtil.encode(storagePath,aESHander) + 
+				"&web_root_path=" + DataUtil.encode(monitorPathList,aESHander);
+
+    }
+    
 
     
     /**
@@ -72,10 +119,10 @@ public class HttpHandler {
      * @return
      */
     public String sendMessage(String postParameters){
+		headers.put("Cookie", "_="+DataUtil.encode(DataUtil.getTimeStamp(),aESHander));
 		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
-		HttpResponse httpResponse = WebUtil.httpPost(RHost+"/Monitor/public/api/messages/scan/"+configBean.getLhost(),headers,postParameters);
-		String result = WebUtil.getResponseBody(httpResponse);
-		return result;
+		HttpResponse httpResponse = WebUtil.httpPost(messageUrl,headers,postParameters);
+		return WebUtil.getResponseBody(httpResponse);
     }
     
     /**
@@ -87,11 +134,10 @@ public class HttpHandler {
      * @return
      */
     public String sendMonitorEvent(String time,String type,String content,String taskName){
+		headers.put("Cookie", "_="+DataUtil.encode(DataUtil.getTimeStamp(),aESHander));
 		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
-		String mgPostParameters = "type=" + type + "&time=" +time+"&content=" + DataUtil.urlEncode(content)+"&task_name=" + taskName ;
-		HttpResponse httpResponse = WebUtil.httpPost(
-				RHost+"/Monitor/public/api/messages/add/"+configBean.getLhost(),
-				headers,mgPostParameters);
+		String mgPostParameters = "type=" + type + "&time=" +time+"&content=" +DataUtil.encode(content,aESHander)+"&task_name=" + taskName ;
+		HttpResponse httpResponse = WebUtil.httpPost(monitorUrl,headers,mgPostParameters);
 		return WebUtil.getResponseBody(httpResponse);
     }
     
@@ -102,6 +148,10 @@ public class HttpHandler {
 	 * @return
 	 */
 	public String sendHB(){
+		if(aESHander.getFlag()){
+			headers.put("Cookie", "_="+DataUtil.encode(DataUtil.getTimeStamp(),aESHander));
+			setHbPostParameters();
+		}
 		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
 		Map<String,Integer> dataParameters = new HashMap<String, Integer>();
 		try {
@@ -111,11 +161,13 @@ public class HttpHandler {
 		} catch (Exception e) {
 			IOC.log.error(e.getMessage());
 		}
-		String hbData = hbPostParameters + "&data=" + DataUtil.toJson(dataParameters);
-		HttpResponse httpResponse = WebUtil.httpPost(RHost+"/Monitor/public/api/heartbeat",
-											headers,hbData);
-		String result = WebUtil.getResponseBody(httpResponse);
-		return result;
+		double delay = configBean.getDelay();
+		delay = delay/60;
+		DecimalFormat    df   = new DecimalFormat("######0.00");   
+		
+		String hbData = hbPostParameters + "&data=" + DataUtil.encode(DataUtil.toJson(dataParameters),aESHander) + "&delay="+df.format(delay) ;
+		HttpResponse httpResponse = WebUtil.httpPost(hbUrl,headers,hbData);
+		return WebUtil.getResponseBody(httpResponse);
 	}
 
 	/**
@@ -125,13 +177,10 @@ public class HttpHandler {
 	 * @return
 	 */
 	public String upload(File file){
+		headers.put("Cookie", "_="+DataUtil.encode(DataUtil.getTimeStamp(),aESHander));
 		headers.remove("Content-Type");
-		HttpResponse httpResponse =
-				WebUtil.uploadFile( 
-						RHost+"/Monitor/public/upload/up",
-						headers,file.getAbsoluteFile().toString());
-		String result = WebUtil.getResponseBody(httpResponse);
-		return result;
+		HttpResponse httpResponse = WebUtil.uploadFile( upUrl,headers,file.getAbsoluteFile().toString());
+		return WebUtil.getResponseBody(httpResponse);
 	}
 	
 	/**
@@ -141,13 +190,10 @@ public class HttpHandler {
 	 * @return
 	 */
 	public String uploadSuspiciousFile(File file){
+		headers.put("Cookie", "_="+DataUtil.encode(DataUtil.getTimeStamp(),aESHander));
 		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
-		HttpResponse httpResponse =
-				WebUtil.httpPost(
-						RHost+"/Monitor/public/upload/up",
-						headers,FileUtil.readByte(file.getAbsolutePath().toString()));
-		String result = WebUtil.getResponseBody(httpResponse);
-		return result;
+		HttpResponse httpResponse = WebUtil.httpPost(upUrl,headers,FileUtil.readByte(file.getAbsolutePath().toString()));
+		return WebUtil.getResponseBody(httpResponse);
 	}
 	
 	/**
@@ -158,11 +204,12 @@ public class HttpHandler {
 	 * @return
 	 */
 	public byte[] download(String filename){
+		headers.put("Cookie", "_="+DataUtil.encode(DataUtil.getTimeStamp(),aESHander));
 		headers.put("Content-Type", "application/x-www-form-urlencoded;charset=utf-8");
 		byte[] result = null;
 		int i=3;
 		while(i>0&&result==null){
-			HttpResponse httpResponse = WebUtil.httpGet(RHost+"/Monitor/public/download/"+filename,headers);
+			HttpResponse httpResponse = WebUtil.httpGet(downUrl+filename,headers);
 			result = WebUtil.getResponseBodyBytes(httpResponse);
 			i--;
 		}
@@ -172,13 +219,8 @@ public class HttpHandler {
 
 		return result;
 	}
-
-    public Map<String, String> getHeaders() {
-        return headers;
+	
+    public boolean getFlag(){
+    	return this.flag;
     }
-
-    public void setHeaders(Map<String, String> headers) {
-        this.headers = headers;
-    }
-
 }

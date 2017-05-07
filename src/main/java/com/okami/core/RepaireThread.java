@@ -1,12 +1,14 @@
 package com.okami.core;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Queue;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
+import com.okami.bean.RequrieBean;
 import com.okami.common.HttpHandler;
 import com.okami.config.DBConfig;
 import com.okami.dao.impl.FileIndexDao;
@@ -15,6 +17,7 @@ import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
 import com.okami.util.ZLibUtil;
+import com.okami.util.ZipUtil;
 
 /**
  * 还原线程
@@ -27,10 +30,11 @@ public class RepaireThread extends Thread{
 //	private String cachPath;
 	private String bakPath;
 	private Queue<String> qHeartBeats;
-	private Queue<String> qRepaire;
+	private Queue<RequrieBean> qRepaire;
 	private ConfigBean configBean;
-
-	
+//	private HashMap<String,Integer> requrieList;
+	@Autowired
+	private HttpHandler httpHandler;
 	@Autowired
 	private GlobaVariableBean globaVariableBean;
 
@@ -44,6 +48,7 @@ public class RepaireThread extends Thread{
 		this.bakPath = configBean.getBakPath();
 		this.qHeartBeats = globaVariableBean.getQHeartBeats();
 		this.qRepaire = globaVariableBean.getQRepaire();
+//		requrieList = new HashMap<String, Integer>();
 		return true;
 	}
 	
@@ -60,23 +65,35 @@ public class RepaireThread extends Thread{
 			
 			
 			if(!qRepaire.isEmpty()){ 
-				String text = qRepaire.poll();
-				String[] textLine = text.split("\t");
-				switch(textLine[0]){
-	        	case "Restore":
-	        		// 还原flag中有的文件
-	     
-	        		if(restore(textLine[3],textLine[4])){
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+textLine[1]+"-Machine\t"+textLine[2]+textLine[3]+" Deal Success!"+"\t"+textLine[4]);
-	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Success!");
-	        		}else{
-	        			qHeartBeats.offer(DataUtil.getTime()+"\t"+ textLine[1]+"-Machine\t"+textLine[2]+textLine[3]+" Deal Failed!"+"\t"+textLine[4]);
-	        			IOC.log.warn(textLine[1]+ "-Machine: "+textLine[2]+textLine[3]+" Deal Failed!");
-	        		}
+				RequrieBean requrieBean = qRepaire.poll();
+        		String sha1 = requrieBean.getSha1();
+        		if(sha1!=null&&sha1.equals(DataUtil.getSHA1ByFile(new File(requrieBean.getFileName())))){
+        			continue;
+        		}
+				boolean flag = false;
+    			qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"\t"+requrieBean.getFileName()+"\t"+requrieBean.getTaskName());
+    			IOC.log.warn(requrieBean.getAction()+ ": "+requrieBean.getFileName());
+				switch(requrieBean.getAction()){
+	        	case "Created":
+	        		flag = FileUtil.deleteAll(new File(requrieBean.getFileName()));
+	        		break;
+	        	case "Deleted":
+	        		flag = restore(requrieBean.getIndexPath(),requrieBean.getTaskName());
+	        		break;
+	        	case "Modified":
+	        		flag = restore(requrieBean.getIndexPath(),requrieBean.getTaskName());
 	        		break;
 	        	default:
 	        		return;
 	        	}
+				
+				if(flag){
+					qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"-Machine\t"+requrieBean.getFileName()+" Deal Success!\t"+requrieBean.getTaskName());
+	    			IOC.log.warn(requrieBean.getAction()+ "-Machine: "+requrieBean.getFileName()+" Deal Success!");
+				}else{
+					qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"-Machine\t"+requrieBean.getFileName()+" Deal Failed!\t"+requrieBean.getTaskName());
+	    			IOC.log.warn(requrieBean.getAction()+ "-Machine: "+requrieBean.getFileName()+" Deal Failed!");
+				}
 			}
 		}	
 	}
@@ -89,7 +106,7 @@ public class RepaireThread extends Thread{
 //		this.qMonitor = qMonitor;
 //	}
 //	
-	public void setQRepaire(Queue<String> qRepaire){
+	public void setQRepaire(Queue<RequrieBean> qRepaire){
 		this.qRepaire = qRepaire;
 	}
 	
@@ -144,8 +161,22 @@ public class RepaireThread extends Thread{
 							// 恢复文件
 							String bakname = this.bakPath + File.separator + monitorTask.getTaskName() + File.separator + fileIndex.getSha1().substring(0,2);
 							bakname = bakname + File.separator + fileIndex.getSha1().substring(2);
+
+							
+							// 备份文件发生意外
+							if(!new File(bakname).exists()){
+								restoreBakFile(fileIndex,monitorTask);
+							}
 							byte[] contentBytes = ZLibUtil.decompress(FileUtil.readByte(bakname));
-							FileUtil.write(monitorTask.getMonitorPath()+fileIndex.getPath(), contentBytes);		
+							
+							
+							if(contentBytes.length==0||!DataUtil.getSHA1(contentBytes).equals(fileIndex.getSha1())){
+								FileUtil.deleteAll(new File(bakname));
+								restoreBakFile(fileIndex,monitorTask);
+								contentBytes = ZLibUtil.decompress(FileUtil.readByte(bakname));
+							}	
+							
+							FileUtil.write(monitorTask.getMonitorPath()+fileIndex.getPath(), contentBytes,false);		
 							file.setExecutable(fileIndex.getExec()==1);
 							file.setReadable(fileIndex.getRead()==1);
 							file.setReadable(fileIndex.getRead()==1);
@@ -255,7 +286,7 @@ public class RepaireThread extends Thread{
 				}
 			}
 			if(monitorTask==null){
-				FileUtil.write(indexPath, FileUtil.readByte(cachFileStr));
+				FileUtil.write(indexPath, FileUtil.readByte(cachFileStr),false);
 				
 			}else{
 				monitorTask.setUpload(0);
@@ -266,12 +297,12 @@ public class RepaireThread extends Thread{
 				fileIndexDao.setDataSource(new DBConfig().indexDataSource(bakPathStr));
 				fileIndexDao.connectDB();
 				
-				List<FileIndex> fileIndexs = fileIndexDao.queryIndexByPath(indexPath.substring(monitorTask.getMonitorPath().length()));
-				if(fileIndexs.size()>=1){
+				FileIndex fileIndex = fileIndexDao.queryIndexByPath(indexPath.substring(monitorTask.getMonitorPath().length()));
+				if(fileIndex!=null){
 					
 					// 添加备份文件
 					String tarSHA1 = DataUtil.getSHA1ByFile(tarCachFile);
-					String srcSHA1 = fileIndexs.get(0).getSha1();
+					String srcSHA1 = fileIndex.getSha1();
 		        	byte[] contentBytes = ZLibUtil.compress(FileUtil.readByte(cachFileStr));
 		        	String bakFold = configBean.getBakPath()+File.separator+monitorTask.getTaskName()+
 							File.separator+tarSHA1.substring(0,2);
@@ -281,11 +312,11 @@ public class RepaireThread extends Thread{
 		        		file.mkdirs();
 		        	}
 		       
-					FileUtil.write(bakFold+File.separator+tarSHA1.substring(2), contentBytes);
+					FileUtil.write(bakFold+File.separator+tarSHA1.substring(2), contentBytes,false);
 					
 					// 更新数据库
-					fileIndexs.get(0).setSha1(tarSHA1);
-					fileIndexDao.updateIndex(fileIndexs.get(0));
+					fileIndex.setSha1(tarSHA1);
+					fileIndexDao.updateIndex(fileIndex);
 					
 					// 删除原始备份文件
 					File srcBakFile = new File(configBean.getBakPath()+File.separator+monitorTask.getTaskName()+
@@ -296,7 +327,7 @@ public class RepaireThread extends Thread{
 					
 					// 修改源文件
 					contentBytes = FileUtil.readByte(cachFileStr);
-					FileUtil.write(monitorTask.getMonitorPath()+fileIndexs.get(0).getPath(), contentBytes);
+					FileUtil.write(monitorTask.getMonitorPath()+fileIndex.getPath(), contentBytes,false);
 					
 					//  上传flag文件
 					String result = null;
@@ -320,6 +351,68 @@ public class RepaireThread extends Thread{
 			e1.printStackTrace();
 			IOC.log.error(e1.getMessage());
 			return false;
+		}
+		return true;
+	}
+	
+	
+	/**
+	 * 修复备份文件
+	 * @data 2017年5月7日
+	 * @param fileIndex
+	 * @param monitorTask
+	 * @return
+	 */
+	private boolean restoreBakFile(FileIndex fileIndex,MonitorTask monitorTask){
+		String[] rarIds = DataUtil.removeDuplicate(fileIndex.getRarId().split(","));
+		String cashFileStr  = configBean.getCachPath()+File.separator+monitorTask.getTaskName();
+		if(rarIds!=null&&rarIds.length>0){
+			qHeartBeats.offer(DataUtil.getTime()+"\tRepaire\tThe Bak Files Are Inconsistent: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+			IOC.log.warn("Repaire: The Bak Files Are Inconsistent: " + monitorTask.getMonitorPath());
+			String filename = null;
+			for(String rarId:rarIds){
+				filename = monitorTask.getTaskName()+"_"+rarId+".rar";
+				byte[] contentBytes = httpHandler.download(filename);
+				if(contentBytes!=null){
+					File cashFile = new File(cashFileStr);
+					if(!cashFile.exists())
+						cashFile.mkdirs();
+					FileUtil.write(cashFileStr+File.separator+filename, contentBytes,false);
+					// 解压rar
+					ZipUtil.extractZip(cashFileStr+File.separator+filename,  configBean.getBakPath()+File.separator+monitorTask.getTaskName(), monitorTask.getFlagName());
+					
+				}else{
+					// 自检出现异常
+					monitorTask.setStatus(0);
+	                qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tUnable To Fix Backup File! Stop Monitor: " + monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+	            	IOC.log.warn("Info: Unable To Fix Backup File! Stop Monitor: " + monitorTask.getMonitorPath());
+	            	return false;
+				}
+			}
+			qHeartBeats.offer(DataUtil.getTime()+"\tRepaire-Machine\tThe Bak Files Has Fixed: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
+			IOC.log.warn("Repaire-Machine: The Bak Files File Has Fixed: " + monitorTask.getMonitorPath());
+		}
+		
+		// 如果父路径不存在， 则创建
+		File file = new File(monitorTask.getMonitorPath()+fileIndex.getPath());
+		while(!file.getParentFile().exists()){
+			file.getParentFile().mkdirs();
+		}
+					
+		// 恢复文件
+		String bakname = configBean.getBakPath()+File.separator+monitorTask.getTaskName() + File.separator + fileIndex.getSha1().substring(0,2);
+		bakname = bakname + File.separator + fileIndex.getSha1().substring(2);
+		
+		file = new File(bakname);
+		if(!file.exists()){
+			FileUtil.combineFile(bakname, DataUtil.removeDuplicate(fileIndex.getRarId().split(",")).length);
+		}
+
+		
+		// 删除cach文件
+		File cashPath= new File(cashFileStr);
+		if(cashPath.exists()){
+			FileUtil.deleteAll(cashPath);
 		}
 		return true;
 	}

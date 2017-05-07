@@ -224,13 +224,14 @@ public class MonitorTask {
 		this.runMode = runMode;
 		this.BCMode = BCMode;
 		this.remark = remark;
-		this.maxSize = maxSize;
+		this.maxSize = "2000000";
 		this.status = status;
 		this.upload = upload;
 	}
 	
 	public MonitorTask(String taskName){
 		this.taskName = taskName;
+		this.maxSize = "2000000";
 	}
 	
 	@Override

@@ -75,32 +75,40 @@ public class ZLibUtil {
      * @return byte[] 解压缩后的数据 
      */  
     public static byte[] decompress(byte[] data) {  
+    	if(data.length==0){
+    		return data;
+    	}
         byte[] output = new byte[0];  
   
         Inflater decompresser = new Inflater();  
         decompresser.reset();  
         decompresser.setInput(data);  
-  
+        
         ByteArrayOutputStream o = new ByteArrayOutputStream(data.length);  
+        
         try {  
             byte[] buf = new byte[1024];  
+            int i=1;
             while (!decompresser.finished()) {  
-                int i = decompresser.inflate(buf);  
+                i = decompresser.inflate(buf); 
                 o.write(buf, 0, i);  
             }  
+            
             output = o.toByteArray();  
         } catch (Exception e) {  
             output = data;  
             e.printStackTrace();  
         } finally {  
+        	
             try {  
                 o.close();  
             } catch (IOException e) {  
                 e.printStackTrace();  
             }  
         }  
-  
+        
         decompresser.end();  
+        
         return output;  
     }  
   
@@ -129,13 +137,4 @@ public class ZLibUtil {
         return   result;
     }  
     
-    public static void main(String args[]){
-
-        byte[] data = FileUtil.readByte("C:\\Users\\dell\\Desktop\\accounts.db");
-        byte[] output = ZLibUtil.decompress(data);
-        System.err.println("解压缩后字节长度:\t" + output.length);  
-        String outputStr = new String(output);  
-        System.err.println("输出字符串:\t" + outputStr);  
-  
-    }  
 }

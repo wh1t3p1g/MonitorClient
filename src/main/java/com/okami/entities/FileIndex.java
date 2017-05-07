@@ -88,7 +88,7 @@ public class FileIndex {
      * 压缩文件所在的rarid
      */
     @Column(name = "RarId") 
-    private int rarId;
+    private String rarId;
     
     public int getId(){
         return id;
@@ -140,7 +140,7 @@ public class FileIndex {
         return status;
     } 
     
-    public int getRarId(){
+    public String getRarId(){
         return rarId;
     }
     
@@ -192,11 +192,11 @@ public class FileIndex {
         this.status = status;
     }
     
-    public void setRarId(int rarId){
+    public void setRarId(String rarId){
         this.rarId = rarId;
     }
     
-    public FileIndex(int id,String path,String sha1,String size,String type,String time,String owner,String ownerGroup,int status,int read,int write,int exec,int rarId){
+    public FileIndex(int id,String path,String sha1,String size,String type,String time,String owner,String ownerGroup,int status,int read,int write,int exec,String rarId){
     	this.id = id;
     	this.path = path;
     	this.sha1 = sha1;
@@ -212,7 +212,7 @@ public class FileIndex {
     	this.rarId = rarId;
     }
     
-    public FileIndex(int id,String path,String sha1,String size,String type,int rarId){
+    public FileIndex(int id,String path,String sha1,String size,String type,String rarId){
     	this.id = id;
     	this.path = path;
     	this.sha1 = sha1;

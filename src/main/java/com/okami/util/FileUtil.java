@@ -15,7 +15,6 @@ import java.util.List;
  * @since 2017/1/6
  */
 public class FileUtil {
-
     public static String readAll(String filePath){
 
         try {
@@ -34,6 +33,7 @@ public class FileUtil {
         }
         return null;
     }
+
 
     /**
      * 按照编码，读取文本文件所有内容
@@ -66,9 +66,6 @@ public class FileUtil {
         try {
             FileInputStream fis = new FileInputStream(filePath);
             FileChannel channel = fis.getChannel();
-            ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
-            long size = channel.size();
-            byte[] bytes = new byte[1024];
             ByteBuffer byteBuffer = ByteBuffer.allocate((int)channel.size());
             while((channel.read(byteBuffer)) > 0){
                 // do nothing
@@ -134,11 +131,11 @@ public class FileUtil {
      * @param bytes
      * @return
      */
-    public static boolean write(String filePath,byte[] bytes){
+    public static boolean write(String filePath,byte[] bytes,boolean flag){
     	File file = new File(filePath);
     	FileOutputStream fos = null;
     	try {
-    		fos = new FileOutputStream(file);
+    		fos = new FileOutputStream(file,flag);
 			fos.write(bytes);
 			fos.close();
 		} catch (IOException e) {
@@ -146,40 +143,6 @@ public class FileUtil {
 			return false;
 		}
     	return true;
-    }
-
-    /**
-     * 寻找对应的key
-     * @param tarPath 目标文件的地址
-     * @param monitorPath 监控路径
-     * @param taskName 任务名
-     * @param bakPath 备份地址 
-     * @param flagName flag 文件名
-     * @return Type|MD5|Name|Read|Write|Exec
-     */
-    public static String searchKey(String tarPath,String monitorPath,String taskName,String bakPath,String flagName){
-    	String key = "";
-    	String[] values = null;
-    	List<String> contents = null;
-    	String cBakPath = bakPath;
-    	String[] names = tarPath.substring(monitorPath.length()+1).replaceAll("\\\\", "/").split("/");
-    	int count = names.length;
-    	for(int i=0;i<names.length;i++){
-    		contents = FileUtil.readLines(cBakPath+File.separator+flagName);
-    		for(int j=0;j<contents.size();j++){
-    			values = contents.get(j).split("\\|");
-    			if(values[2].equals(names[i])){
-    				cBakPath += File.separator + values[1];
-    				key = contents.get(j);
-    				count -= 1;
-    				break;
-    			}
-    		}
-    	}
-    	if(count != 0){
-    		return null;
-    	}
-    	return key+"|"+cBakPath;
     }
     
     /**
@@ -220,22 +183,50 @@ public class FileUtil {
 		return true;
 	}
 	
-	/**
-	 * 删除flag里的某条key
-	 * @return
-	 */
-	public static boolean dealKey(String flagFile,String key){
-		List<String> contents = FileUtil.readLines(flagFile);
-		String content = "";
-		for(int i=0;i<contents.size();i++){
-			if(contents.get(i).equals(key)){
-				contents.remove(i);
-				i--;
-				continue;
-			}
-			content += contents.get(i)+"\r\n";
-		}
-		return FileUtil.write(flagFile,content,false);
-	}
 
+
+    /**
+     * 按size分割文件
+     * @data 2017年5月3日
+     * @param file
+     */
+    public static int cutFile(String filename,int size){
+    	File file = new File(filename);
+        BufferedInputStream in = null;  
+        int i = 1 ;
+        try {  
+            in = new BufferedInputStream(new FileInputStream(file));  
+            byte[] buffer = new byte[size];  
+            while (-1 != in.read(buffer, 0, size)) {  
+                FileUtil.write(filename+"_"+i, buffer,false);
+                i++;
+            }  
+            
+        } catch (IOException e) {  
+            e.printStackTrace();  
+        } finally {  
+            try {  
+                in.close();  
+            } catch (IOException e) {  
+                e.printStackTrace();  
+            }  
+        }  
+        return i;
+    }
+    
+    /**
+     * 连接被切的文件
+     * @data 2017年5月4日
+     * @param filename
+     * @param size
+     */
+    public static boolean combineFile(String filename,int num){
+    	
+    	byte[] content = null;
+    	for(int i=1;i<=num;i++){
+    		content = FileUtil.readByte(filename+"_"+i);
+    		FileUtil.write(filename, content, true);
+    	}
+    	return true;
+    }
 }
