@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import com.okami.config.DBConfig;
 import com.okami.core.BackupAndCheckThread;
 import com.okami.core.MonitorThread;
+import com.okami.dao.impl.DataConfigDao;
 import com.okami.dao.impl.FileIndexDao;
 import com.okami.dao.impl.MonitorTaskDao;
 import com.okami.entities.CacheLog;
@@ -30,11 +31,12 @@ public class GlobaVariableBean {
 	
 	// 队列
 	private Queue<String> qHeartBeats;
-	private Queue<String> qRepaire;
+	private Queue<RequrieBean> qRepaire;
 	private List<Queue<String>> qMonitorList;
 	
 	// 数据库的连接列表
 	private MonitorTaskDao monitorTaskDao;
+	private DataConfigDao dataConfigDao;
 	private List<FileIndexDao> fileIndexDaoList;
 	
 	// 线程
@@ -49,14 +51,18 @@ public class GlobaVariableBean {
 		qMonitorList = new ArrayList<Queue<String>>();
 		fileIndexDaoList = new ArrayList<FileIndexDao>();
 		qHeartBeats = new LinkedList<String>();
-		qRepaire = new LinkedList<String>();
+		qRepaire = new LinkedList<RequrieBean>();
 		monitorTaskDao = new MonitorTaskDao();
-		
+		dataConfigDao = new DataConfigDao();
 		// 开启数据库连接
+		dataConfigDao.setDataSource(new DBConfig().dataSource());
 		monitorTaskDao.setDataSource(new DBConfig().dataSource());
 		try {
 			if(!monitorTaskDao.isTableExist()){
 				monitorTaskDao.createTable();
+			}
+			if(!dataConfigDao.isTableExist()){
+				dataConfigDao.createTable();
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -80,11 +86,11 @@ public class GlobaVariableBean {
 		this.qHeartBeats = qHeartBeats;
 	}
 	
-	public Queue<String> getQRepaire(){
+	public Queue<RequrieBean> getQRepaire(){
 		return qRepaire;
 	}
 
-	public void setQRepaire(Queue<String> qRepaire){
+	public void setQRepaire(Queue<RequrieBean> qRepaire){
 		this.qRepaire = qRepaire;
 	}
 	
@@ -102,6 +108,14 @@ public class GlobaVariableBean {
 
 	public void setMonitorTaskDao(MonitorTaskDao monitorTaskDao){
 		this.monitorTaskDao = monitorTaskDao;
+	}
+	
+	public DataConfigDao getDataConfigDao(){
+		return dataConfigDao;
+	}
+
+	public void setDataConfigDao(DataConfigDao dataConfigDao){
+		this.dataConfigDao = dataConfigDao;
 	}
 	
 	public List<FileIndexDao> getFileIndexDaoList(){

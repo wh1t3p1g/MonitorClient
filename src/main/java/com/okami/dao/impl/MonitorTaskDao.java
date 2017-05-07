@@ -63,6 +63,7 @@ public class MonitorTaskDao implements IMonitorTaskDao{
 		    	MonitorTask task = new MonitorTask(taskId, taskName, projectName,monitorPath,whiteList,blackList,flagName,runMode,BCMode,remark,maxSize,status,upload);
 		    	list.add(task);
 		    }
+			rs.close();
 		} catch (SQLException e) {
 			throw new RuntimeException(e);
 		} finally {

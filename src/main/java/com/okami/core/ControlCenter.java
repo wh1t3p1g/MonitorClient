@@ -40,6 +40,7 @@ public class ControlCenter {
 	@Autowired
 	private RepaireThread repaireThread;
 	
+	
 	public ControlCenter(){
 		CacheLogDao cacheLogDao = new CacheLogDao();
 		cacheLogDao.setDataSource(new DBConfig().dataSource());
@@ -59,9 +60,10 @@ public class ControlCenter {
 	 * @return
 	 */
 	public boolean init(){
+
         // 初始化路径
         initPath();
-		
+        
 		// 恢复线程
 		repaireThread.init();
 		repaireThread.start();
@@ -228,7 +230,7 @@ public class ControlCenter {
 				if(!file.exists()){
 					file.mkdirs();
 				}
-				FileUtil.write(cachPath, contentBytes);
+				FileUtil.write(cachPath, contentBytes,false);
 				
 				// 检查flag树的Sha1，与服务其那边的sha1 是否相同，不正常则恢复flag与文件
 				if(!bakFlag.exists()|| !DataUtil.getSHA1ByFile(bakFlag).equals(DataUtil.getSHA1ByFile(new File(cachPath)))){
@@ -313,8 +315,11 @@ public class ControlCenter {
 
 		for(int i=0;i<monitorTaskList.size();i++){
 			if(monitorTaskList.get(i).getTaskName().equals(taskName)){
-				// 关闭
+				// 关闭监控线程
+				globaVariableBean.getMonitorThreadList().get(i).stop();
+				
 				monitorTaskList.get(i).setStatus(0);
+				
 				// 更新数据库以及关闭文件树连接
 				try{
 					globaVariableBean.getMonitorTaskDao().updateTask(monitorTaskList.get(i));
@@ -324,14 +329,8 @@ public class ControlCenter {
 					IOC.log.error(e.getMessage());
 				}
 				
-		
-				// 关闭监控线程
-				globaVariableBean.getMonitorThreadList().get(i).stop();
 				
-				IOC.log.warn("Info: Stop Monitor: " + monitorTaskList.get(i).getMonitorPath());
-				globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
-						"\tInfo\tStop Monitor: " + monitorTaskList.get(i).getMonitorPath()+"\t"+monitorTaskList.get(i).getTaskName());
-				
+
 				// 删除相应队列
 				globaVariableBean.getQMonitorList().remove(i);
 				globaVariableBean.getMonitorThreadList().remove(i);
@@ -339,6 +338,8 @@ public class ControlCenter {
 				globaVariableBean.getFileIndexDaoList().remove(i);
 				globaVariableBean.getMonitorTaskList().remove(i);
 				i--;
+				
+				
 
 				return true;
 			}

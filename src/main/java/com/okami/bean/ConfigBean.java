@@ -49,6 +49,11 @@ public class ConfigBean {
 	private String storagePath;
 	
 	/**
+	 * 脚本位置
+	 */
+	private String scriptPath;
+	
+	/**
 	 * 备份地址
 	 */
 	private String bakPath;
@@ -64,8 +69,8 @@ public class ConfigBean {
 	private String monitorPathList;
 	
 	public ConfigBean(){
-
-		Map<String,String> config = IniUtil.getConfig(System.getProperty("user.dir") + File.separator + "config/config.ini");
+		this.scriptPath = System.getProperty("user.dir");
+		Map<String,String> config = IniUtil.getConfig(scriptPath + File.separator + "config/config.ini");
 		this.lhost = config.get("lhost");
 		this.lport = config.get("lport");
 		this.rhost = config.get("rhost");
@@ -73,9 +78,10 @@ public class ConfigBean {
 		this.monitorPathList =  config.get("monitorPathList");
 		
 		try {
-			this.delay =Integer.valueOf( config.get("delay")).intValue();
+			this.delay =Integer.valueOf(config.get("delay")).intValue();
 		} catch (NumberFormatException e) {
 			IOC.log.error(e.getMessage());
+			this.delay = 60;
 		}
 		this.storagePath = config.get("storagePath");
 		setStoragePath(this.storagePath);
@@ -85,12 +91,16 @@ public class ConfigBean {
 		return this.storagePath;
 	}
 	
-	public void setStoragePath(String storagePath){
+	private void setStoragePath(String storagePath){
 		this.storagePath = storagePath;
 		this.bakPath = this.storagePath +File.separator +"bak";
 		this.cachPath = this.storagePath +File.separator +"cach";
-//		this.logPath = this.storagePath +File.separator +"log";
 	}
+	
+	public String getScriptPath(){
+		return this.scriptPath;
+	}
+	
 	
 	public void setDelay(int delay){
 		this.delay = delay;
@@ -99,27 +109,15 @@ public class ConfigBean {
 	public int getDelay(){
 		return this.delay;
 	}
-	
-	public void setLport(String lport){
-		this.lport = lport;
-	}
 
 	public String getLport(){
 		return this.lport;
-	}
-	
-	public void setLhost(String lhost){
-		this.lhost = lhost;
 	}
 
 	public String getLhost(){
 		return this.lhost;
 	}
 	
-	public void setRport(String rport){
-		this.rport = rport;
-	}
-
 	public String getRport(){
 		return this.rport;
 	}
@@ -144,33 +142,19 @@ public class ConfigBean {
 		return this.remoteMode;
 	}
 	
-	public void setRemoteMode(boolean remoteMode){
-		this.remoteMode = remoteMode;
-	}
-	
-//	public void setCashPath(String cashPath){
-//		this.cashPath = cashPath;
-//	}
 	
 	public String getCachPath(){
 		return cachPath;
 	}
 	
-//	public void setBakPath(String bakPath){
-//		this.bakPath = bakPath;
-//	}
 	
 	public String getBakPath(){
 		return bakPath;
 	}
-//	
-//	public void setLogPath(String logPath){
-//		this.logPath = logPath;
-//	}
+
 	
 //	public String getLogPath(){
 //		return logPath;
 //	}
 	
-
 }

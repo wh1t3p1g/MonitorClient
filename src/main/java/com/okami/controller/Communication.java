@@ -5,6 +5,8 @@ import com.okami.bean.ConfigBean;
 import com.okami.bean.GlobaVariableBean;
 import com.okami.bean.Message;
 import com.okami.bean.PathTree;
+import com.okami.common.AESHander;
+import com.okami.common.HttpHandler;
 import com.okami.core.ControlCenter;
 import com.okami.core.IOC;
 import com.okami.core.RepaireThread;
@@ -14,6 +16,8 @@ import com.okami.entities.MonitorTask;
 import com.okami.util.DataUtil;
 import com.okami.util.FileUtil;
 import com.okami.util.IniUtil;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -32,18 +36,33 @@ import javax.servlet.http.HttpServletRequest;
  */
 @RestController
 public class Communication {
+	
+	@Autowired
+	ConfigBean configBean;
+	
+	@Autowired
+	RepaireThread repaireThread;
+	
+	@Autowired
+	GlobaVariableBean globaVariableBean;
+	
+	@Autowired
+	ControlCenter controlCenter ;
+	
+    @Autowired
+    private AESHander aESHander;
 
-    @RequestMapping(value="/hello",method = RequestMethod.GET)
-    public String home(){
-        return "hello";
-    }
-
-
-
-    @RequestMapping(value="/getStatus/{id}",method=RequestMethod.GET)
-    public String getStatus(@PathVariable int id){
-        return ""+id;
-    }
+//    @RequestMapping(value="/hello",method = RequestMethod.GET)
+//    public String home(){
+//        return "hello";
+//    }
+//
+//
+//
+//    @RequestMapping(value="/getStatus/{id}",method=RequestMethod.GET)
+//    public String getStatus(@PathVariable int id){
+//        return ""+id;
+//    }
     
     /**
      * 设置配置
@@ -53,13 +72,23 @@ public class Communication {
      */
     @RequestMapping(value="/setDelay",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String setDelay(HttpServletRequest request){
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Set Delay"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Set Delay"));
+		}
+    	
     	String delayStr = DataUtil.urlDecode(request.getParameter("delay"));
     	int delay = 1;
     	try {
     	    delay = (new Double(Double.valueOf(delayStr)*60)).intValue();
-    	    ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
     	    configBean.setDelay(delay);
-    	    IniUtil.setDelay(delay, System.getProperty("user.dir") + File.separator + "config/config.ini");
+    	    IniUtil.setDelay(delay,configBean.getScriptPath()+ File.separator + "config/config.ini");
     	} catch (NumberFormatException e) {
     		return DataUtil.toJson(returnMessage(-8,"Set Delay: "+delayStr));
     	}
@@ -74,13 +103,17 @@ public class Communication {
      */
     @RequestMapping(value="/getSuspiciousFile",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String getSuspiciousFile(HttpServletRequest request){
-    	String indexPath = request.getParameter("filepath");
-    	indexPath = DataUtil.urlDecode(indexPath);
-    	if(File.separator.equals("\\")){
-    		indexPath = indexPath.replaceAll("/", "\\\\");
-    	}else{
-    		indexPath = indexPath.replaceAll("\\\\", "/");
-    	}
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Get Suspicious File"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Get Suspicious File"));
+		}
+    	String indexPath = DataUtil.slashDeal(DataUtil.decode(request.getParameter("filepath"),aESHander));
 		File file = new File(indexPath);
 		if(!file.exists()){
 			return DataUtil.toJson(returnMessage(-11,"Get Suspicious File: "+indexPath));
@@ -98,18 +131,22 @@ public class Communication {
      */
     @RequestMapping(value="/getSuspiciousFileSHA1",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String getSuspiciousFileSHA1(HttpServletRequest request){
-    	String indexPath = request.getParameter("filepath");
-    	indexPath = DataUtil.urlDecode(indexPath);
-    	if(File.separator.equals("\\")){
-    		indexPath = indexPath.replaceAll("/", "\\\\");
-    	}else{
-    		indexPath = indexPath.replaceAll("\\\\", "/");
-    	}
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Get Suspicious File SHA1"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Get Suspicious File SHA1"));
+		}
+
+    	String indexPath = DataUtil.slashDeal(DataUtil.decode(request.getParameter("filepath"),aESHander));
 		File file = new File(indexPath);
 		if(!file.exists()){
 			return DataUtil.toJson(returnMessage(-11,"Get Suspicious File SHA1: "+indexPath));
 		}
-		
     	IOC.log.warn("Info: Mission Success(Get Suspicious File SHA1:"+indexPath+"): Deal Mission Sucess!");
     	return DataUtil.getSHA1ByFile(file);
     }
@@ -122,14 +159,18 @@ public class Communication {
      */
     @RequestMapping(value="/removeFile",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String removeFile(HttpServletRequest request){
-    	String indexPath = request.getParameter("indexPath");
-    	indexPath = DataUtil.urlDecode(indexPath);
-    	if(File.separator.equals("\\")){
-    		indexPath = indexPath.replaceAll("/", "\\\\");
-    	}else{
-    		indexPath = indexPath.replaceAll("\\\\", "/");
-    	}
-    	RepaireThread repaireThread = IOC.instance().getClassobj(RepaireThread.class);
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Remove File"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Remove File"));
+		}
+    	
+    	String indexPath = DataUtil.slashDeal(DataUtil.decode(request.getParameter("indexPath"),aESHander));
         if(repaireThread.remove(indexPath))
         {
 			return DataUtil.toJson(returnMessage(1,"Remove File: "+indexPath));
@@ -145,19 +186,20 @@ public class Communication {
      */
     @RequestMapping(value="/editFile",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String editFile(HttpServletRequest request){
-    	String indexPath = request.getParameter("indexPath");
-    	indexPath = DataUtil.urlDecode(indexPath);
-    	if(File.separator.equals("\\")){
-    		indexPath = indexPath.replaceAll("/", "\\\\");
-    	}else{
-    		indexPath = indexPath.replaceAll("\\\\", "/");
-    	}
-    	
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Edit File"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Edit File"));
+		}
+    	String indexPath = DataUtil.slashDeal(DataUtil.decode(request.getParameter("indexPath"),aESHander));
     	String fileName = indexPath.substring(indexPath.lastIndexOf(File.separator));
-
     	byte[] contentBytes = DataUtil.urlDecode(request.getParameter("content")).getBytes();   // 暂定
-  
-    	
+
     	// 先放入缓存文件中
     	ConfigBean configBean = IOC.instance().getClassobj(ConfigBean.class);
     	String cachFileStr = configBean.getCachPath()+File.separator+fileName;
@@ -165,10 +207,8 @@ public class Communication {
     	if(file.exists()){
     		FileUtil.deleteAll(file);
     	}
-		FileUtil.write(cachFileStr, contentBytes);
+		FileUtil.write(cachFileStr, contentBytes,false);
 		
-
-    	RepaireThread repaireThread = IOC.instance().getClassobj(RepaireThread.class);
     	if(repaireThread.edit(indexPath,cachFileStr))
         {
 			return DataUtil.toJson(returnMessage(1,"Edit File: "+indexPath));
@@ -177,56 +217,6 @@ public class Communication {
     	return DataUtil.toJson(returnMessage(-2,"Edit File"+indexPath));
     }
     
-    /**
-     * 获取监控任务信息
-     * @data 2017年4月23日
-     * @param request
-     * @return
-     */
-    @RequestMapping(value="/getMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
-    public String getMonitor(HttpServletRequest request){
-    	
-    	String taskName =  DataUtil.urlDecode(request.getParameter("taskName"));
-    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
-    	MonitorTaskDao monitorTaskDao = globaVariableBean.getMonitorTaskDao();
-    	if(taskName!=""){
-        	try {
-    			MonitorTask monitorTask = monitorTaskDao.queryTaskByTaskName(taskName);
-    			if(monitorTask!=null){    				
-    				for(MonitorTask mTask:globaVariableBean.getMonitorTaskList()){
-    					if(mTask.getTaskName().equals(taskName)){
-    						monitorTask.setStatus(1);
-    						break;
-    					}
-    				}
-        			Map<String,MonitorTask> res = new HashMap<String, MonitorTask>();
-        			res.put( String.valueOf(monitorTask.getTaskId()),monitorTask);
-    			}else{
-    				return DataUtil.toJson(returnMessage(-2,"Get Monitor: "+taskName));
-    			}
-    		} catch (Exception e) {
-    			IOC.log.error(e.getMessage());
-    		}
-    	}else{
-    		// 返回全部
-    		try {
-    			Map<String,MonitorTask> res = new HashMap<String, MonitorTask>();
-				for(MonitorTask monitorTask:monitorTaskDao.queryTask()){
-    				for(MonitorTask mTask:globaVariableBean.getMonitorTaskList()){
-    					if(mTask.getTaskName().equals(taskName)){
-    						monitorTask.setStatus(1);
-    						break;
-    					}
-    				}
-        			res.put( String.valueOf(monitorTask.getTaskId()),monitorTask);
-				}
-				return DataUtil.toJson(res);
-			} catch (Exception e) {
-				IOC.log.error(e.getMessage());
-			}
-    	}
-    	return DataUtil.toJson(returnMessage(-7,"Get Monitor: "+taskName));
-    }
     
     /**
      * 添加监控任务
@@ -236,23 +226,28 @@ public class Communication {
      */
     @RequestMapping(value="/addMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String addMonitor(HttpServletRequest request){
-    	String taskName =  DataUtil.urlDecode(request.getParameter("taskName"));
-    	String flagName = DataUtil.urlDecode(taskName) + ".ind";
-    	String projectName =  DataUtil.urlDecode(request.getParameter("projectName"));
-    	String monitorPath =  DataUtil.urlDecode(request.getParameter("monitorPath"));
-    	String whiteList =  DataUtil.urlDecode(request.getParameter("whiteList"));
-    	String blackList =  DataUtil.urlDecode(request.getParameter("blackList"));
-    	String remark =  DataUtil.urlDecode(request.getParameter("remark"));
-    	int RunMode = Integer.parseInt(request.getParameter("RunMode"));
-    	if(File.separator.equals("\\")){
-    		monitorPath = monitorPath.replaceAll("/", "\\\\");
-    		whiteList = whiteList.replaceAll("/", "\\\\");
-    		blackList = blackList.replaceAll("/", "\\\\");
-    	}else{
-    		monitorPath = monitorPath.replaceAll("\\\\", "/");
-    		whiteList = whiteList.replaceAll("\\\\", "/");
-    		blackList = blackList.replaceAll("\\\\", "/");
-    	}
+    	try{
+        	int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+        	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+        		return DataUtil.toJson(returnMessage(-12,"Add Monitor"));
+        	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Add Monitor"));
+		}
+
+    	String taskName =  DataUtil.decode(request.getParameter("taskName"),aESHander);
+    	String flagName = taskName+ ".ind";
+    	String projectName =  DataUtil.decode(request.getParameter("projectName"),aESHander);
+    	String monitorPath =  DataUtil.decode(request.getParameter("monitorPath"),aESHander);
+    	String whiteList =  DataUtil.decode(request.getParameter("whiteList"),aESHander);
+    	String blackList =  DataUtil.decode(request.getParameter("blackList"),aESHander);
+    	String remark =  DataUtil.decode(request.getParameter("remark"),aESHander);
+    	int RunMode = Integer.parseInt(DataUtil.decode(request.getParameter("RunMode"),aESHander));
+    	monitorPath = DataUtil.slashDeal(monitorPath);
+    	whiteList = DataUtil.slashDeal(whiteList);
+    	blackList = DataUtil.slashDeal(blackList);
     	
     	// 路径不存在
     	if(!new File(monitorPath).exists()){
@@ -260,7 +255,6 @@ public class Communication {
     	}
     	
     	// 数据库中已存在
-    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
     	MonitorTaskDao monitorTaskDao = globaVariableBean.getMonitorTaskDao();
    
     	try {
@@ -270,8 +264,6 @@ public class Communication {
 				}
 			}
 		} catch (Exception e) {
-
-			
 			IOC.log.error(e.getMessage());
 			return DataUtil.toJson(returnMessage(-8,"Add Monitor: "+taskName));
 		}
@@ -286,7 +278,6 @@ public class Communication {
         	monitorTask.setProjectName(projectName);
         	monitorTask.setFlagName(flagName);
         	monitorTask.setRemark(remark);
-        	monitorTask.setMaxSize("2097152");
         	monitorTask.setBCMode(0);
         	monitorTask.setRunMode(RunMode);
         	monitorTask.setStatus(0);
@@ -308,25 +299,29 @@ public class Communication {
      */
     @RequestMapping(value="/editMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String editMonitor(HttpServletRequest request){
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Edit Monitor"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Edit Monitor"));
+		}
     	
-    	String taskName =  DataUtil.urlDecode(request.getParameter("taskName"));
-    	String flagName = DataUtil.urlDecode(taskName) + ".ind";
-    	String projectName =  DataUtil.urlDecode(request.getParameter("projectName"));
-    	String monitorPath =  DataUtil.urlDecode(request.getParameter("monitorPath"));
-    	String whiteList =  DataUtil.urlDecode(request.getParameter("whiteList"));
-    	String blackList =  DataUtil.urlDecode(request.getParameter("blackList"));
-    	String remark =  DataUtil.urlDecode(request.getParameter("remark"));
-    	int RunMode = Integer.parseInt(request.getParameter("RunMode"));
+    	String taskName =  DataUtil.decode(request.getParameter("taskName"),aESHander);
+    	String flagName = taskName+ ".ind";
+    	String projectName =  DataUtil.decode(request.getParameter("projectName"),aESHander);
+    	String monitorPath =  DataUtil.decode(request.getParameter("monitorPath"),aESHander);
+    	String whiteList =  DataUtil.decode(request.getParameter("whiteList"),aESHander);
+    	String blackList =  DataUtil.decode(request.getParameter("blackList"),aESHander);
+    	String remark =  DataUtil.decode(request.getParameter("remark"),aESHander);
+    	int RunMode = Integer.parseInt(DataUtil.decode(request.getParameter("RunMode"),aESHander));
     	
-    	if(File.separator.equals("\\")){
-    		monitorPath = monitorPath.replaceAll("/", "\\\\");
-    		whiteList = whiteList.replaceAll("/", "\\\\");
-    		blackList = blackList.replaceAll("/", "\\\\");
-    	}else{
-    		monitorPath = monitorPath.replaceAll("\\\\", "/");
-    		whiteList = whiteList.replaceAll("\\\\", "/");
-    		blackList = blackList.replaceAll("\\\\", "/");
-    	}
+    	monitorPath = DataUtil.slashDeal(monitorPath);
+    	whiteList = DataUtil.slashDeal(whiteList);
+    	blackList = DataUtil.slashDeal(blackList);
     	
     	// 路径不存在
     	if(!new File(monitorPath).exists()){
@@ -334,7 +329,6 @@ public class Communication {
     	}
     	
     	// 数据库中已存在
-    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
     	MonitorTaskDao monitorTaskDao = globaVariableBean.getMonitorTaskDao();
     	try {
 			for(MonitorTask mTask:monitorTaskDao.queryTask()){
@@ -353,7 +347,6 @@ public class Communication {
 		        	monitorTask.setProjectName(projectName);
 		        	monitorTask.setFlagName(flagName);
 		        	monitorTask.setRemark(remark);
-		        	monitorTask.setMaxSize("2097152");
 		        	monitorTask.setBCMode(0);
 		        	monitorTask.setStatus(0);
 		        	monitorTask.setUpload(0);
@@ -377,10 +370,21 @@ public class Communication {
      */
     @RequestMapping(value="/startMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String startMonitor(HttpServletRequest request){
-    	String taskName =  DataUtil.urlDecode(request.getParameter("taskName"));
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Start Monitor"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Start Monitor"));
+		}
+    	
+    	String taskName =  DataUtil.decode(request.getParameter("taskName"),aESHander);
     	
     	// 查看任务是否运行
-    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
+
     	for(MonitorTask monitorTask:globaVariableBean.getMonitorTaskList()){
     		if(monitorTask.getTaskName().equals(taskName)){
     			if(monitorTask.getStatus()==1){
@@ -401,7 +405,7 @@ public class Communication {
 					monitorTask.setUpload(0);
 					monitorTaskDao.updateTask(monitorTask);
 			    	
-					ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
+
 			    	if(controlCenter.startMonitor(monitorTask)){
 				    	return DataUtil.toJson(returnMessage(1,"Start Monitor: "+taskName));
 			    	}
@@ -420,11 +424,21 @@ public class Communication {
      * @return
      */
     @RequestMapping(value="/stopMonitor",method=RequestMethod.POST)
-    public String stopMonitor(HttpServletRequest request){
-    	String taskName =  DataUtil.urlDecode(request.getParameter("taskName"));
+    public String stopMonitor(HttpServletRequest request){    	
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Stop Monitor"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Stop Monitor"));
+		}
+    	
+    	String taskName =  DataUtil.decode(request.getParameter("taskName"),aESHander);
     	
     	// 查看任务是否运行
-    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
     	MonitorTask mTask = null;
 		try{
 			mTask = globaVariableBean.getMonitorTaskDao().queryTaskByTaskName(taskName);
@@ -435,7 +449,6 @@ public class Communication {
 		}
 		
 		if(mTask!=null&&mTask.getStatus()==1){
-			ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
 			if(!controlCenter.stopMonitor(taskName)){
 				return DataUtil.toJson(returnMessage(-9,"Delete Monitor: "+taskName));
 			}
@@ -447,10 +460,20 @@ public class Communication {
     
     @RequestMapping(value="/deleteMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String deleteMonitor(HttpServletRequest request){
-    	String taskName =  DataUtil.urlDecode(request.getParameter("taskName"));
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Delete Monitor"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Delete Monitor"));
+		}
+    	
+    	String taskName =  DataUtil.decode(request.getParameter("taskName"),aESHander);
     	
     	// 查看任务是否运行
-    	GlobaVariableBean globaVariableBean = IOC.instance().getClassobj(GlobaVariableBean.class);
     	MonitorTask mTask = null;
 		try{
 			mTask = globaVariableBean.getMonitorTaskDao().queryTaskByTaskName(taskName);
@@ -461,7 +484,6 @@ public class Communication {
 		}
 		
 		if(mTask!=null&&mTask.getStatus()==1){
-			ControlCenter controlCenter = IOC.instance().getClassobj(ControlCenter.class);
 			if(!controlCenter.stopMonitor(taskName)){
 				return DataUtil.toJson(returnMessage(-9,"Delete Monitor: "+taskName));
 			}
@@ -509,8 +531,19 @@ public class Communication {
      * @return
      */
     @RequestMapping(value="/getPath",method=RequestMethod.GET, produces = "application/json; charset=utf-8")
-    public String getPath(@RequestParam(value = "rootPath", required = true) String rootPath){ 
-    	rootPath = DataUtil.urlDecode(rootPath);
+    public String getPath(HttpServletRequest request){ 
+    	try{
+    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(_1 - _) >60){
+	    		return DataUtil.toJson(returnMessage(-12,"Get Path"));
+	    	}
+    	}catch (Exception e) {
+			IOC.log.error(e.getMessage());
+			return DataUtil.toJson(returnMessage(-8,"Get Path"));
+		}
+    	
+    	String rootPath = DataUtil.decode(request.getParameter("rootPath"),aESHander);
     	if(File.separator.equals("\\")){
     		rootPath = rootPath.replaceAll("/", "\\\\");
     	}else{
@@ -538,6 +571,7 @@ public class Communication {
     		case -9: message = "Mission Failed("+mission+"): This Monitor Task Stop Failed!"; break;
     		case -10: message = "Mission Failed("+mission+"): Upload File Failed!"; break;
     		case -11: message = "Mission Failed("+mission+"): This File Is Not Exist!"; break;
+    		case -12: message = "Mission Failed("+mission+"): Are You Really A Member Of The Organization?"; break;
     	}
     	
     	if(status==1){

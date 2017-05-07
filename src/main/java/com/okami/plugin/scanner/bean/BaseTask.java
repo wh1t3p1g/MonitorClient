@@ -3,6 +3,10 @@ package com.okami.plugin.scanner.bean;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
+import com.okami.MonitorClientApplication;
+import com.okami.common.AESHander;
+import com.okami.util.DataUtil;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -192,5 +196,16 @@ public class BaseTask {
 
     public void setFullScanResults(Map<String, String> fullScanResults) {
         this.fullScanResults = fullScanResults;
+    }
+    
+    public void decodeAll(){
+    	AESHander aESHander = MonitorClientApplication.ctx.getBean(AESHander.class);
+        this.taskName = DataUtil.decode(this.taskName,aESHander);
+        this.taskId = DataUtil.decode(this.taskId,aESHander);
+        this.filePath = DataUtil.decode(this.filePath,aESHander);
+        this.exceptPath = DataUtil.decode(this.exceptPath,aESHander);
+        this.exceptExtension = DataUtil.decode(this.exceptExtension,aESHander);
+        this.scriptExtension = DataUtil.decode(this.scriptExtension,aESHander);
+
     }
 }

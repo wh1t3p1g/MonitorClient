@@ -1,6 +1,7 @@
 package com.okami.plugin.scanner.core.common;
 
 import com.okami.MonitorClientApplication;
+import com.okami.common.AESHander;
 import com.okami.common.HttpHandler;
 import com.okami.plugin.scanner.bean.BaseTask;
 import com.okami.plugin.scanner.bean.FileContent;
@@ -32,8 +33,11 @@ public class AssignScanner {
     private FullScanner fullScanner;
 
     @Autowired
+    private AESHander aESHander;
+    
+    @Autowired
     private HttpHandler httpHandler;
-
+    
     public int assignTask(){
         String data=null;
         MonitorClientApplication.log.info("Scan Start");
@@ -47,7 +51,7 @@ public class AssignScanner {
                         "FuzzHash Scan Finished, Found "+task.getFuzzHashScanResults().size()
                                 +" evil file");
                 System.out.println(task.getFuzzHashScanResults().toString());
-                data="data="+DataUtil.urlEncode(DataUtil.toJson(task.getFuzzHashScanResults()))
+                data="data="+DataUtil.encode(DataUtil.toJson(task.getFuzzHashScanResults()),aESHander)
                                 +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
                                 +"&size="+task.getFuzzHashScanResults().size();
                 httpHandler.sendMessage(data);
@@ -61,7 +65,7 @@ public class AssignScanner {
                         "Static Scan Finished, Found "+task.getStaticScanResults().size()
                                 +" evil file");
                 System.out.println(task.getStaticScanResults().toString());
-                data="data="+DataUtil.urlEncode(DataUtil.toJson(task.getStaticScanResults()))
+                data="data="+DataUtil.encode(DataUtil.toJson(task.getStaticScanResults()),aESHander)
                         +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
                         +"&size="+task.getStaticScanResults().size();
                 httpHandler.sendMessage(data);
@@ -75,7 +79,7 @@ public class AssignScanner {
                         "Statistic Scan Finished, Found "+task.getStatisticsScanResults().size()
                                 +" evil file");
                 System.out.println(task.getStatisticsScanResults().toString());
-                data="data="+DataUtil.urlEncode(DataUtil.toJson(task.getStatisticsScanResults()))
+                data="data="+DataUtil.encode(DataUtil.toJson(task.getStatisticsScanResults()),aESHander)
                         +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
                         +"&size="+task.getStatisticsScanResults().size();
                 httpHandler.sendMessage(data);
@@ -89,7 +93,7 @@ public class AssignScanner {
                                 (task.getFullScanResults().size())
                                 +" evil file");
                 System.out.println(task.getFullScanResults());
-                data="data="+DataUtil.urlEncode(DataUtil.toJson(task.getFullScanResults()))
+                data="data="+DataUtil.encode(DataUtil.toJson(task.getFullScanResults()),aESHander)
                         +"&time="+DataUtil.getTime()+"&task_id="+task.getTaskId()
                         +"&size="+task.getFullScanResults().size();
                 httpHandler.sendMessage(data);
