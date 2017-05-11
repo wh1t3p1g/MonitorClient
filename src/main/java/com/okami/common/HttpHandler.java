@@ -96,7 +96,8 @@ public class HttpHandler {
     			aESHander.AESInit(DataConfig.getKey(),DataConfig.getIv());
     		}
 		} catch (Exception e) {
-			e.printStackTrace();
+    		e.printStackTrace();
+    		IOC.log.error(e.getMessage());
 		}
     	
     	
@@ -159,7 +160,8 @@ public class HttpHandler {
 				dataParameters.put(monitorTask.getTaskName(), monitorTask.getStatus());
 			}
 		} catch (Exception e) {
-			IOC.log.error(e.getMessage());
+    		e.printStackTrace();
+    		IOC.log.error(e.getMessage());
 		}
 		double delay = configBean.getDelay();
 		delay = delay/60;
@@ -212,6 +214,11 @@ public class HttpHandler {
 			HttpResponse httpResponse = WebUtil.httpGet(downUrl+filename,headers);
 			result = WebUtil.getResponseBodyBytes(httpResponse);
 			i--;
+			try {
+				Thread.sleep(1000);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
 		}
 		if(result==null||(new String(result)).equals("not found")){
 			return null;

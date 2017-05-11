@@ -35,8 +35,8 @@ public class StaticScanner extends AbstractScanner{
             String content= FileUtil.readAll(fileContent.getFilePath());
             String result=regexEvilWords.calculate(content);
             if(!result.equals("false")){
-//                File file=new File(fileContent.getFilePath());
-//                file.delete();
+                File file=new File(fileContent.getFilePath());
+                file.delete();
                 retData.put(fileContent.getFilePath(),result);
             }
         }

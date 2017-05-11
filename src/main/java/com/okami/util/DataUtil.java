@@ -115,9 +115,7 @@ public class DataUtil {
 			md5 = DigestUtils.sha1Hex(IOUtils.toByteArray(fis));
 	        IOUtils.closeQuietly(fis); 
 		} catch (FileNotFoundException e) {
-//			e.printStackTrace();
 		} catch (IOException e) {
-//			e.printStackTrace();
 		}    
         return md5;
     }

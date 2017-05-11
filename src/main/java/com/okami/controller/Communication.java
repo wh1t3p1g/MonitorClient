@@ -73,9 +73,9 @@ public class Communication {
     @RequestMapping(value="/setDelay",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String setDelay(HttpServletRequest request){
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Set Delay"));
 	    	}
     	}catch (Exception e) {
@@ -104,9 +104,9 @@ public class Communication {
     @RequestMapping(value="/getSuspiciousFile",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String getSuspiciousFile(HttpServletRequest request){
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Get Suspicious File"));
 	    	}
     	}catch (Exception e) {
@@ -132,9 +132,9 @@ public class Communication {
     @RequestMapping(value="/getSuspiciousFileSHA1",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String getSuspiciousFileSHA1(HttpServletRequest request){
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Get Suspicious File SHA1"));
 	    	}
     	}catch (Exception e) {
@@ -160,9 +160,9 @@ public class Communication {
     @RequestMapping(value="/removeFile",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String removeFile(HttpServletRequest request){
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Remove File"));
 	    	}
     	}catch (Exception e) {
@@ -187,9 +187,9 @@ public class Communication {
     @RequestMapping(value="/editFile",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String editFile(HttpServletRequest request){
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Edit File"));
 	    	}
     	}catch (Exception e) {
@@ -227,9 +227,9 @@ public class Communication {
     @RequestMapping(value="/addMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String addMonitor(HttpServletRequest request){
     	try{
-        	int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-        	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
         		return DataUtil.toJson(returnMessage(-12,"Add Monitor"));
         	}
     	}catch (Exception e) {
@@ -300,9 +300,9 @@ public class Communication {
     @RequestMapping(value="/editMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String editMonitor(HttpServletRequest request){
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Edit Monitor"));
 	    	}
     	}catch (Exception e) {
@@ -371,9 +371,9 @@ public class Communication {
     @RequestMapping(value="/startMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String startMonitor(HttpServletRequest request){
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Start Monitor"));
 	    	}
     	}catch (Exception e) {
@@ -426,9 +426,9 @@ public class Communication {
     @RequestMapping(value="/stopMonitor",method=RequestMethod.POST)
     public String stopMonitor(HttpServletRequest request){    	
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Stop Monitor"));
 	    	}
     	}catch (Exception e) {
@@ -461,9 +461,9 @@ public class Communication {
     @RequestMapping(value="/deleteMonitor",method=RequestMethod.POST, produces = "application/json; charset=utf-8")
     public String deleteMonitor(HttpServletRequest request){
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Delete Monitor"));
 	    	}
     	}catch (Exception e) {
@@ -533,9 +533,9 @@ public class Communication {
     @RequestMapping(value="/getPath",method=RequestMethod.GET, produces = "application/json; charset=utf-8")
     public String getPath(HttpServletRequest request){ 
     	try{
-    		int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-	    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-	    	if( Math.abs(_1 - _) >60){
+    		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+	    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+	    	if( Math.abs(token1 - token) >60){
 	    		return DataUtil.toJson(returnMessage(-12,"Get Path"));
 	    	}
     	}catch (Exception e) {

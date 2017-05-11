@@ -6,6 +6,8 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Stack;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
@@ -72,9 +74,10 @@ public class BackupAndCheckThread extends Thread{
 		this.fileIndexDao = fileIndexDao;
 		this.maxSize = Integer.parseInt(monitorTask.getMaxSize());
 		this.time = DataUtil.getTime();
-        if(monitorTask.getWhiteList()!=null){
+        if(monitorTask.getWhiteList()!=null&&!monitorTask.getWhiteList().equals("")){
             this.whiteList = monitorTask.getWhiteList().split(",");
-        }else{
+        }
+        else{
             this.whiteList = null;
         }
 		initPath();
@@ -88,7 +91,7 @@ public class BackupAndCheckThread extends Thread{
      * @param qMonitor
      * @param qRepaire
      */
-    public void setQqueue(Queue<String> qHeartBeats,Queue<String> qMonitor,Queue<RequrieBean> qRepaire){
+    public void setQqueue(Queue<String> qHeartBeats,Queue<String> qMonitor,Stack<RequrieBean> qRepaire){
         this.qHeartBeats = qHeartBeats;
         this.qMonitor = qMonitor;
     }
@@ -180,16 +183,18 @@ public class BackupAndCheckThread extends Thread{
 			return false;
 		}
 		
+		
+
+		// 切割大文件
+		addRar(new File(this.bakPath),bakPath);
+		
 		// 切换至安全模式		
 		qMonitor.offer("True");
 		qHeartBeats.offer(DataUtil.getTime()+"\tInfo\tTurn To Safe Mode: "+monitorTask.getMonitorPath()+"\t"+monitorTask.getTaskName());
 		IOC.log.warn("Info: Turn To Safe Mode: " + monitorTask.getMonitorPath());
 		
 
-		
 
-		// 切割大文件
-		addRar(new File(this.bakPath),bakPath);
 		
 		// 以后变成自检模式，并插入数据库
 		monitorTask.setBCMode(1);
@@ -201,7 +206,8 @@ public class BackupAndCheckThread extends Thread{
 		try {
 			globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
 		} catch (Exception e) {
-			IOC.log.error(e.getMessage());
+    		e.printStackTrace();
+    		IOC.log.error(e.getMessage());
 		}
 		
 //		boolean flag = true;
@@ -312,7 +318,8 @@ public class BackupAndCheckThread extends Thread{
 
 			}
 		} catch (Exception e) {
-			IOC.log.error(e.getMessage());
+    		e.printStackTrace();
+    		IOC.log.error(e.getMessage());
 		}
 		return true;
 	}
@@ -416,11 +423,12 @@ public class BackupAndCheckThread extends Thread{
 					bakname = bakPath + File.separator + fileIndex.getSha1().substring(0,2)+ File.separator +fileIndex.getSha1().substring(2) ;
 					file = new File(bakname);
 					if(!file.exists()){
+//						System.out.println("a"+fileIndex.getPath());
 						rarIds = rarIds + fileIndex.getRarId() + ",";
 					}else{
 						byte[] contentBytes = FileUtil.readByte(bakname);
 						if(contentBytes.length==0||!fileIndex.getSha1().equals(DataUtil.getSHA1(ZLibUtil.decompress(contentBytes)))){
-							
+//							System.out.println("b"+fileIndex.getPath());		
 							FileUtil.deleteAll(file);
 							rarIds = rarIds + fileIndex.getRarId() + ",";
 						}
@@ -430,7 +438,8 @@ public class BackupAndCheckThread extends Thread{
 
 			}
 		} catch (Exception e) {
-			IOC.log.error(e.getMessage());
+    		e.printStackTrace();
+    		IOC.log.error(e.getMessage());
 		}
 
 		return DataUtil.removeDuplicate(rarIds.split(","));
@@ -464,11 +473,13 @@ public class BackupAndCheckThread extends Thread{
 				// 白名单跳过自检
 				whiteFlag = false;
                 String parentPath = webFile.substring(0,webFile.lastIndexOf(File.separator));
-                for(int i=0;i<whiteList.length;i++){
-                	if(parentPath.indexOf(whiteList[i]) == 0){  // 不应该大于0
-                    	whiteFlag = true;
-                    	break;
-                    }
+                if(whiteList!=null){
+	                for(int i=0;i<whiteList.length;i++){
+	                	if(parentPath.indexOf(whiteList[i]) == 0){  // 不应该大于0
+	                    	whiteFlag = true;
+	                    	break;
+	                    }
+	                }
                 }
                 if(whiteFlag)
                 	continue;
@@ -517,7 +528,8 @@ public class BackupAndCheckThread extends Thread{
 			checkWebSpilthFile(new File(monitorTask.getMonitorPath()));
 			
 		} catch (Exception e) {
-			IOC.log.error(e.getMessage());
+    		e.printStackTrace();
+    		IOC.log.error(e.getMessage());
 		}
 		return true;
 	}
@@ -530,11 +542,13 @@ public class BackupAndCheckThread extends Thread{
 	 */
 	private boolean checkWebSpilthFile(File files){
 		// 白名单跳
-        for(int i=0;i<whiteList.length;i++){
-        	if(files.getAbsolutePath().toString().indexOf(whiteList[i]) == 0){  // 不应该大于0
-            	return true;
-            }
-        }
+		if(whiteList!=null){
+	        for(int i=0;i<whiteList.length;i++){
+	        	if(files.getAbsolutePath().toString().indexOf(whiteList[i]) == 0){  // 不应该大于0
+	            	return true;
+	            }
+	        }
+		}
 		
 		for(File file:files.listFiles()){
 			FileIndex fileIndex = null;
@@ -630,6 +644,9 @@ public class BackupAndCheckThread extends Thread{
 	 * @param dir
 	 */
 	public void addRar(File dir,String foldname){
+		if(monitorTask.getStatus()==0){
+			return ;
+		}
 		File[] files = dir.listFiles();
 		for(File file:files){
 			if(file.isDirectory()){
@@ -657,7 +674,8 @@ public class BackupAndCheckThread extends Thread{
 			        }
 			       
 				} catch (Exception e) {
-					e.printStackTrace();
+//	        		e.printStackTrace();
+	        		IOC.log.error(e.getMessage());
 				}
 			}
 		}

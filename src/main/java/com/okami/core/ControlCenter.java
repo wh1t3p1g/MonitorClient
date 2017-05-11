@@ -139,7 +139,8 @@ public class ControlCenter {
 	    			monitorTask.setStatus(1);
 					globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
 				} catch (Exception e) {
-					e.printStackTrace();
+	        		e.printStackTrace();
+	        		IOC.log.error(e.getMessage());
 				}
 				return true;
 			}
@@ -161,7 +162,8 @@ public class ControlCenter {
 	    			monitorTask.setStatus(1);
 					globaVariableBean.getMonitorTaskDao().updateTask(monitorTask);
 				} catch (Exception e) {
-					e.printStackTrace();
+	        		e.printStackTrace();
+	        		IOC.log.error(e.getMessage());
 				}
 			}
 
@@ -244,9 +246,11 @@ public class ControlCenter {
 						FileUtil.deleteAll(dest);
 						Files.copy(source.toPath(), dest.toPath());
 					} catch (IOException e) {
-						IOC.log.error(e.getMessage());
+		        		e.printStackTrace();
+		        		IOC.log.error(e.getMessage());
 					}catch (Exception e) {
-						IOC.log.error(e.getMessage());
+		        		e.printStackTrace();
+		        		IOC.log.error(e.getMessage());
 					}
 					IOC.log.warn("Repaire-Machine: The Bak Index File Has Fixed: " + monitorTask.getMonitorPath());
 					globaVariableBean.getQHeartBeats().offer(DataUtil.getTime()+
