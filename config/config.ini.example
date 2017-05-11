@@ -7,12 +7,12 @@ Local Host = 192.168.199.183
 Local Port = 61234
 Remote Host = 192.168.199.183
 Remote Port = 8089
-HeartBeat Delay = 120
+HeartBeat Delay = 60
 
 #To avoid unnecessary coding problems, please use the English name of the directory.
 #Mainly used for backup files, log files and cache file storage
 [Storage]
-Storage Path = /Users/wh1t3P1g/Desktop/storage
+Storage Path = /path/to/storage
 
 #To avoid unnecessary coding problems, please use the English name of the directory.
 #This configuration is sent to the server to set up the monitoring directory.
