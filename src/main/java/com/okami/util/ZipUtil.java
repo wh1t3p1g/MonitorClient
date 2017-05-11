@@ -185,8 +185,8 @@ public class ZipUtil {
 			return true;
 		} catch (ZipException e) {
 			e.printStackTrace();
-			return false;
 		}
+		return false;
 	}
 	
 	/**

@@ -153,6 +153,7 @@ public class FileUtil {
 
 		while(file.exists()){
 			delSub(file);
+
 		}
 		return true;
 	}
@@ -164,7 +165,6 @@ public class FileUtil {
 	 */
 	public static boolean delSub(File file){
 		try{
-
 			if (file.isFile()|| (file.list()!=null&&file.list().length == 0) ) {
 				file.delete();
 			} 

@@ -42,7 +42,6 @@ public class MonitorClientApplication extends SpringBootServletInitializer imple
         configurableEmbeddedServletContainer.setMimeMappings(mappings );
 		String Lport = IniUtil.getLport(System.getProperty("user.dir") + File.separator + "config/config.ini");
 		configurableEmbeddedServletContainer.setPort(Integer.parseInt(Lport));
-
 	}
 
 }

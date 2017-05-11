@@ -4,6 +4,8 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Queue;
+import java.util.Stack;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.okami.bean.ConfigBean;
@@ -30,7 +32,7 @@ public class RepaireThread extends Thread{
 //	private String cachPath;
 	private String bakPath;
 	private Queue<String> qHeartBeats;
-	private Queue<RequrieBean> qRepaire;
+	private Stack<RequrieBean> qRepaire;
 	private ConfigBean configBean;
 //	private HashMap<String,Integer> requrieList;
 	@Autowired
@@ -63,37 +65,49 @@ public class RepaireThread extends Thread{
 				IOC.log.error(e.getMessage());
 			}
 			
-			
-			if(!qRepaire.isEmpty()){ 
-				RequrieBean requrieBean = qRepaire.poll();
-        		String sha1 = requrieBean.getSha1();
-        		if(sha1!=null&&sha1.equals(DataUtil.getSHA1ByFile(new File(requrieBean.getFileName())))){
-        			continue;
-        		}
-				boolean flag = false;
-    			qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"\t"+requrieBean.getFileName()+"\t"+requrieBean.getTaskName());
-    			IOC.log.warn(requrieBean.getAction()+ ": "+requrieBean.getFileName());
-				switch(requrieBean.getAction()){
-	        	case "Created":
-	        		flag = FileUtil.deleteAll(new File(requrieBean.getFileName()));
-	        		break;
-	        	case "Deleted":
-	        		flag = restore(requrieBean.getIndexPath(),requrieBean.getTaskName());
-	        		break;
-	        	case "Modified":
-	        		flag = restore(requrieBean.getIndexPath(),requrieBean.getTaskName());
-	        		break;
-	        	default:
-	        		return;
-	        	}
-				
-				if(flag){
-					qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"-Machine\t"+requrieBean.getFileName()+" Deal Success!\t"+requrieBean.getTaskName());
-	    			IOC.log.warn(requrieBean.getAction()+ "-Machine: "+requrieBean.getFileName()+" Deal Success!");
-				}else{
-					qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"-Machine\t"+requrieBean.getFileName()+" Deal Failed!\t"+requrieBean.getTaskName());
-	    			IOC.log.warn(requrieBean.getAction()+ "-Machine: "+requrieBean.getFileName()+" Deal Failed!");
+			try {
+				if(!qRepaire.empty()){ 
+					RequrieBean requrieBean = qRepaire.pop();
+					String sha1 = null;
+	        		sha1 = requrieBean.getSha1();
+	        		if(sha1!=null&&sha1.equals(DataUtil.getSHA1ByFile(new File(requrieBean.getFileName())))){
+	        			continue;
+	        		}
+	        		qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"\t"+requrieBean.getFileName()+"\t"+requrieBean.getTaskName());
+	    			IOC.log.warn(requrieBean.getAction()+ ": "+requrieBean.getFileName());
+	    			
+					boolean flag = false;
+		        	if(requrieBean.getAction().equals("Created")){
+		        		flag = FileUtil.deleteAll(new File(requrieBean.getFileName()));
+		        	}
+		        	else if(requrieBean.getAction().equals("Deleted")){
+		        		flag = restore(requrieBean.getIndexPath(),requrieBean.getTaskName());
+		        	}
+		        	else if(requrieBean.getAction().equals("Modified")){ 
+		        		flag = restore(requrieBean.getIndexPath(),requrieBean.getTaskName());
+		        	}
+		        	else{
+		        		flag = restore(requrieBean.getIndexPath(),requrieBean.getTaskName());
+						if(flag){
+							qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"-Machine\t"+requrieBean.getFileName()+" To "+requrieBean.getSrcRename()+" Deal Success!\t"+requrieBean.getTaskName());
+			    			IOC.log.warn(requrieBean.getAction()+ "-Machine: "+requrieBean.getFileName()+" Deal Success!");
+						}else{
+							qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"-Machine\t"+requrieBean.getFileName()+" To "+requrieBean.getSrcRename()+" Deal Failed!\t"+requrieBean.getTaskName());
+			    			IOC.log.warn(requrieBean.getAction()+ "-Machine: "+requrieBean.getFileName()+" Deal Failed!");
+						}
+						continue;
+		        	}
+	
+					if(flag){
+						qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"-Machine\t"+requrieBean.getFileName()+" Deal Success!\t"+requrieBean.getTaskName());
+		    			IOC.log.warn(requrieBean.getAction()+ "-Machine: "+requrieBean.getFileName()+" Deal Success!");
+					}else{
+						qHeartBeats.offer(requrieBean.getTime()+"\t"+requrieBean.getAction()+"-Machine\t"+requrieBean.getFileName()+" Deal Failed!\t"+requrieBean.getTaskName());
+		    			IOC.log.warn(requrieBean.getAction()+ "-Machine: "+requrieBean.getFileName()+" Deal Failed!");
+					}
 				}
+			}catch (Exception e) {
+				IOC.log.error(e.getMessage());
 			}
 		}	
 	}
@@ -106,7 +120,7 @@ public class RepaireThread extends Thread{
 //		this.qMonitor = qMonitor;
 //	}
 //	
-	public void setQRepaire(Queue<RequrieBean> qRepaire){
+	public void setQRepaire(Stack<RequrieBean> qRepaire){
 		this.qRepaire = qRepaire;
 	}
 	
@@ -170,7 +184,7 @@ public class RepaireThread extends Thread{
 							byte[] contentBytes = ZLibUtil.decompress(FileUtil.readByte(bakname));
 							
 							
-							if(contentBytes.length==0||!DataUtil.getSHA1(contentBytes).equals(fileIndex.getSha1())){
+							if(contentBytes.length==0&&!DataUtil.getSHA1(contentBytes).equals(fileIndex.getSha1())){
 								FileUtil.deleteAll(new File(bakname));
 								restoreBakFile(fileIndex,monitorTask);
 								contentBytes = ZLibUtil.decompress(FileUtil.readByte(bakname));
@@ -185,7 +199,8 @@ public class RepaireThread extends Thread{
 					
 
 				} catch (Exception e) {
-					IOC.log.error(e.getMessage());
+	        		e.printStackTrace();
+	        		IOC.log.error(e.getMessage());
 					return false;
 				} 
 				break;
