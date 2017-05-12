@@ -24,7 +24,7 @@ public class FuzzyHashScanner extends AbstractScanner{
     @Autowired
     private FuzzyHash fuzzyHash;
 
-    private int threshold=90;
+    private int threshold=80;
 
     @Override
     public Map<String,String> calculate() {
