@@ -84,14 +84,21 @@ public class EnumFiles {
             String dirname=fileContent.getDirname();
             dirname=dirname.substring(0,dirname.length()-1);
             if(exceptExtensions!=null&&
-                !exceptExtension.equals("")&&
+                !exceptExtension.isEmpty()&&
                 exceptExtensions.contains(extension)){
                 continue;
             }
-            if(exceptPath!=null&&
-                !exceptPath.equals("")&&
-                exceptPaths.contains(dirname)){
-                continue;
+            if(exceptPaths!=null&&
+                !exceptPath.isEmpty()){
+                boolean flag=false;
+                for (String path:exceptPaths) {
+                    if(dirname.contains(path)){
+                        flag=true;
+                        break;
+                    }
+                }
+                if(flag)
+                    continue;
             }
             lists.add(fileContent);
 
