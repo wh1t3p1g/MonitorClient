@@ -84,12 +84,12 @@ public class EnumFiles {
             String dirname=fileContent.getDirname();
             dirname=dirname.substring(0,dirname.length()-1);
             if(exceptExtensions!=null&&
-                !exceptExtension.isEmpty()&&
-                exceptExtensions.contains(extension)){
+                    !exceptExtension.isEmpty()&&
+                    exceptExtensions.contains(extension)){
                 continue;
             }
             if(exceptPaths!=null&&
-                !exceptPath.isEmpty()){
+                    !exceptPath.isEmpty()){
                 boolean flag=false;
                 for (String path:exceptPaths) {
                 	System.out.println(path);
@@ -107,7 +107,6 @@ public class EnumFiles {
         }
         return lists;
     }
-
     /**
      * 设置属性
      * @param path 文件路径
