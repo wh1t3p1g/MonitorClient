@@ -131,7 +131,10 @@ public class BaseTask {
     }
 
     public void setExceptPath(String exceptPath) {
-        this.exceptPath = exceptPath;
+        if(exceptPath!=null&&!exceptPath.isEmpty())
+            this.exceptPath = DataUtil.slashDeal(exceptPath);
+        else
+            this.exceptPath="";
     }
 
     public String getExceptExtension() {

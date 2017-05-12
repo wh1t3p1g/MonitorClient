@@ -72,9 +72,9 @@ public class EnumFiles {
     private List<FileContent> filter(List<FileContent> fileContents,String exceptPath,String exceptExtension){
         List<String> exceptPaths=null;
         List<String> exceptExtensions=null;
-        if(exceptPath!=null)
+        if(exceptPath!=null&&!exceptPath.isEmpty())
             exceptPaths=Arrays.asList(exceptPath.split(","));
-        if(exceptExtension!=null)
+        if(exceptExtension!=null&&!exceptExtension.isEmpty())
             exceptExtensions=Arrays.asList(exceptExtension.split(","));
 
 
@@ -84,12 +84,12 @@ public class EnumFiles {
             String dirname=fileContent.getDirname();
             dirname=dirname.substring(0,dirname.length()-1);
             if(exceptExtensions!=null&&
-                !exceptExtension.isEmpty()&&
-                exceptExtensions.contains(extension)){
+                    !exceptExtension.isEmpty()&&
+                    exceptExtensions.contains(extension)){
                 continue;
             }
             if(exceptPaths!=null&&
-                !exceptPath.isEmpty()){
+                    !exceptPath.isEmpty()){
                 boolean flag=false;
                 for (String path:exceptPaths) {
                     if(dirname.contains(path)){
@@ -105,7 +105,6 @@ public class EnumFiles {
         }
         return lists;
     }
-
     /**
      * 设置属性
      * @param path 文件路径
