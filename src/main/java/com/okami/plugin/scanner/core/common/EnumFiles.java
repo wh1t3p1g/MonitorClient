@@ -72,9 +72,9 @@ public class EnumFiles {
     private List<FileContent> filter(List<FileContent> fileContents,String exceptPath,String exceptExtension){
         List<String> exceptPaths=null;
         List<String> exceptExtensions=null;
-        if(exceptPath!=null)
+        if(exceptPath!=null&&!exceptPath.isEmpty())
             exceptPaths=Arrays.asList(exceptPath.split(","));
-        if(exceptExtension!=null)
+        if(exceptExtension!=null&&!exceptExtension.isEmpty())
             exceptExtensions=Arrays.asList(exceptExtension.split(","));
 
 
