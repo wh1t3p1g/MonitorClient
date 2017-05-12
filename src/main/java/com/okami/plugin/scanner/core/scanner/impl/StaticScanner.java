@@ -33,10 +33,11 @@ public class StaticScanner extends AbstractScanner{
         List<FileContent> fileContents=getTask().getFileContents();
         for (FileContent fileContent:fileContents){
             String content= FileUtil.readAll(fileContent.getFilePath());
-            String result=regexEvilWords.calculate(content);
+            if(content==null||content.isEmpty())continue;
+            String result=regexEvilWords.calculate(content.replaceAll("((\"|\')\\s*(\\&|\\+|\\.)\\s*(\"|\'))",""));
             if(!result.equals("false")){
-                File file=new File(fileContent.getFilePath());
-                file.delete();
+//                File file=new File(fileContent.getFilePath());
+//                file.delete();
                 retData.put(fileContent.getFilePath(),result);
             }
         }

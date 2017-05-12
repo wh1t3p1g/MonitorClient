@@ -31,12 +31,11 @@ public class FullScanner extends AbstractScanner {
     @Autowired
     private StatisticsScanner statisticsScanner;
 
+    private String scriptExtension;
+
     @Override
     public Map<String, String> calculate() {
         //init
-        Map<String,String> fuzzyHashResults=new HashMap<>();
-        Map<String,String> staticResults=new HashMap<>();
-        Map<String,String> statisticResults=new HashMap<>();
         Map<String,String> fullResults=new HashMap<>();
         List<FileContent> fileContents=getTask().getFileContents();
         fuzzyHash.setThreshold(90);
@@ -46,23 +45,36 @@ public class FullScanner extends AbstractScanner {
             //checking fuzzyhash
             String result=fuzzyHash.calculate(content);
             if(!result.equals("false")){
-                fuzzyHashResults.put(fileContent.getFilePath(),result);
+                fullResults.put(fileContent.getFilePath(),result);
             }
             //checking static
             result=regexEvilWords.calculate(content);
             if(!result.equals("false")){
-                staticResults.put(fileContent.getFilePath(),result);
+                if(fullResults.containsKey(fileContent.getFilePath())){
+                    result=fullResults.get(fileContent.getFilePath())+";"+result;
+                }
+                fullResults.put(fileContent.getFilePath(),result);
             }
             //checking statistic
-            result=statisticsScanner.calculate(fileContent);
-            if(!result.equals("false")){
-                statisticResults.put(fileContent.getFilePath(),result);
+            if(fileContent.getFileExt().equals(this.scriptExtension)){
+                result=statisticsScanner.calculate(fileContent);
+                if(!result.equals("false")){
+                    if(fullResults.containsKey(fileContent.getFilePath())){
+                        result=fullResults.get(fileContent.getFilePath())+";"+result;
+                    }
+                    fullResults.put(fileContent.getFilePath(),result);
+                }
             }
+
         }
-        fullResults.putAll(fuzzyHashResults);
-        fullResults.putAll(staticResults);
-        fullResults.putAll(statisticResults);
         return fullResults;
     }
 
+    public String getScriptExtension() {
+        return scriptExtension;
+    }
+
+    public void setScriptExtension(String scriptExtension) {
+        this.scriptExtension = scriptExtension;
+    }
 }

@@ -37,8 +37,8 @@ public class RegexEvilWords {
             Pattern r = buildRegex(entry.getValue());
             Matcher m = r.matcher(content);
             if (m.find( )) {
-                System.out.println("Found value: " + m.group());
-                return "statistics:("+entry.getKey()+")";
+                MonitorClientApplication.log.info("Found value: " + m.group());
+                return "statistics:("+m.group()+")";
             }
         }
         return "false";
