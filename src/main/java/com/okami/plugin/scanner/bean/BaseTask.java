@@ -131,12 +131,8 @@ public class BaseTask {
     }
 
     public void setExceptPath(String exceptPath) {
-        if(exceptPath!=null&&!exceptPath.isEmpty())
-            this.exceptPath = DataUtil.slashDeal(exceptPath);
-        else
-            this.exceptPath="";
+        this.exceptPath = exceptPath;
     }
-
     public String getExceptExtension() {
         return exceptExtension;
     }
@@ -209,6 +205,9 @@ public class BaseTask {
         this.exceptPath = DataUtil.decode(this.exceptPath,aESHander);
         this.exceptExtension = DataUtil.decode(this.exceptExtension,aESHander);
         this.scriptExtension = DataUtil.decode(this.scriptExtension,aESHander);
-
+        if(exceptPath!=null&&!exceptPath.isEmpty())
+            this.exceptPath = DataUtil.slashDeal(exceptPath);
+        else
+            this.exceptPath="";
     }
 }
