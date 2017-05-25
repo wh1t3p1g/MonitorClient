@@ -78,7 +78,7 @@ public class FuzzyHash {
         for(Map.Entry<String, String> entry : this.features.entrySet()) {
             num=this.spamSum.match(hash,entry.getValue());
             if(num>this.threshold){
-                return entry.getKey()+"("+num+"%)";
+                return "static:("+entry.getKey()+"|"+num+"%)";
             }
         }
         return "false";

@@ -38,7 +38,7 @@ public class FullScanner extends AbstractScanner {
         //init
         Map<String,String> fullResults=new HashMap<>();
         List<FileContent> fileContents=getTask().getFileContents();
-        fuzzyHash.setThreshold(90);
+        fuzzyHash.setThreshold(80);
         // /.init
         for (FileContent fileContent : fileContents) {
             String content=FileUtil.readAll(fileContent.getFilePath(),"UTF-8");
