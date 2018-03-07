@@ -24,8 +24,9 @@
 | NetWork  | intranet                 | intranet
 
 2. 添加libjnotify.so文件
+
   添加环境文件(dll,so)到java library库文件目录<br>
-  根据操作系统，添加thirdparty目录下相应的so/dll文件到步骤一中显示的路径中去
+  根据操作系统，添加thirdparty目录下相应的so/dll文件到步骤一中显示的路径中去<br>
   e.g. 64位Linux操作系统添加linux/64/libjnotify.so到java库文件夹中去即可。
 
 3. 修改客户端配置（config/config.ini）
