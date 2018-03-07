@@ -92,6 +92,8 @@ public class EnumFiles {
                     !exceptPath.isEmpty()){
                 boolean flag=false;
                 for (String path:exceptPaths) {
+//                	System.out.println(path);
+//                	System.out.println(dirname);
                     if(dirname.contains(path)){
                         flag=true;
                         break;

@@ -10,7 +10,7 @@ public class RequrieBean {
 	private String action;
 	private String time;
 	private String monitorPath;
-//	private String newFilename;
+	private String srcRename;
 	private String indexPath;
 	private String taskName;
 	private String Sha1;
@@ -25,14 +25,15 @@ public class RequrieBean {
 		this.indexPath = indexPath;
 	}
 	
-//	public RequrieBean(String action,String time,String monitorPath,String newFilename,String indexPath,String taskName){
-//		this.action = action;
-//		this.time = time;
-//		this.monitorPath = monitorPath;
-//		this.taskName = taskName;
-//		this.indexPath = indexPath;
-//		this.newFilename = newFilename;
-//	}
+	public RequrieBean(String action,String time,String monitorPath,String indexPath,String Sha1,String taskName,String srcRename){
+		this.action = action;
+		this.time = time;
+		this.monitorPath = monitorPath;
+		this.taskName = taskName;
+		this.Sha1 = Sha1;
+		this.indexPath = indexPath;
+		this.srcRename = srcRename;
+	}
 	
 	public String getAction(){
 		return this.action;
@@ -51,6 +52,10 @@ public class RequrieBean {
 	}
 	public String getTaskName(){
 		return this.taskName;
+	}
+	
+	public String getSrcRename(){
+		return this.srcRename;
 	}
 	
 	public String getFileName(){

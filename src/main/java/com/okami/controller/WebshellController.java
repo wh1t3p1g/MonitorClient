@@ -43,9 +43,9 @@ public class WebshellController {
 
     @RequestMapping(value="/webshell/task/new",method=RequestMethod.POST)
     public String newTask(HttpServletRequest request){
-    	int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-    	if( Math.abs(_1 - _) >60){
+		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+    	if( Math.abs(token1 - token) >60){
     		 return "Are You Really A Member Of The Organization?";
     	}
     	
@@ -71,9 +71,9 @@ public class WebshellController {
     }
     @RequestMapping(value="/webshell/task/stop",method=RequestMethod.GET)
     public String stopTask(HttpServletRequest request){
-    	int _ =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
-    	int _1 = Integer.parseInt(DataUtil.getTimeStamp());
-    	if( Math.abs(_1 - _) >60){
+		int token =  Integer.parseInt(DataUtil.decode(request.getParameter("_"),aESHander));
+    	int token1 = Integer.parseInt(DataUtil.getTimeStamp());
+    	if( Math.abs(token1 - token) >60){
     		 return "Are You Really A Member Of The Organization?";
     	}
     	

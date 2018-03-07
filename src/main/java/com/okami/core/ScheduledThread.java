@@ -148,11 +148,13 @@ public class ScheduledThread {
 			// 先存入数据库
 			String text = globaVariableBean.getQHeartBeats().poll();
 			String[] textList =  text.split("\t");
-			result = httpHandler.sendMonitorEvent(textList[0],textList[1],textList[2],textList[3]);
-			if(result==null || result.indexOf("true")<=0){
-				statusFlag = false;
-			}else{
-				statusFlag = true;
+			if(statusFlag){
+				result = httpHandler.sendMonitorEvent(textList[0],textList[1],textList[2],textList[3]);
+				if(result==null || result.indexOf("true")<=0){
+					statusFlag = false;
+				}else{
+					statusFlag = true;
+				}
 			}
 				
 			// 网络不通则存入数据库
@@ -165,7 +167,8 @@ public class ScheduledThread {
 					cacheLog.setTaskName(textList[3]);
 					cacheLogDao.insertCacheLog(cacheLog);
 				} catch (Exception e) {
-					IOC.log.error(e.getMessage());
+	        		e.printStackTrace();
+	        		IOC.log.error(e.getMessage());
 				}
 			}
 		}
@@ -192,7 +195,8 @@ public class ScheduledThread {
 					cacheLogDao.deleteCacheLog(cacheLog);
 				}
 			} catch (Exception e) {
-				IOC.log.error(e.getMessage());
+        		e.printStackTrace();
+        		IOC.log.error(e.getMessage());
 			}
 		}
 		
@@ -213,45 +217,47 @@ public class ScheduledThread {
 						// 上传rar文件
 						String cachFold = configBean.getCachPath() + File.separator + mTask.getTaskName();
 						File[] files = new File(cachFold).listFiles();
-						for(File file:files){
+						if(files!=null&&files.length!=0){
+							for(File file:files){
+								result = httpHandler.upload(file);
+								if(result==null || result.indexOf("success")<=0)
+								{
+									statusFlag = false;
+									flag = false;
+									break;
+								}
+							}
+							
+							//  上传flag文件
+							File file = new File(configBean.getBakPath()  + File.separator +mTask.getFlagName());
 							result = httpHandler.upload(file);
-							if(result==null || result.indexOf("success")<=0)
-							{
+							if(result==null || result.indexOf("success")<=0){
 								statusFlag = false;
 								flag = false;
 								break;
 							}
-						}
-						
-						//  上传flag文件
-						File file = new File(configBean.getBakPath()  + File.separator +mTask.getFlagName());
-						result = httpHandler.upload(file);
-						if(result==null || result.indexOf("success")<=0){
-							statusFlag = false;
-							flag = false;
-							break;
-						}
-						else{
-							statusFlag = true;
-						}
-						
-						if(flag){
-							// 更新数据库的上传标志
-							try {
-								mTask.setUpload(1);
-								globaVariableBean.getMonitorTaskDao().updateTask(mTask);
-							} catch (Exception e) {
-								e.printStackTrace();
-								IOC.log.error(e.getMessage());
+							else{
+								statusFlag = true;
 							}
 							
-							httpHandler.sendMonitorEvent(DataUtil.getTime(),"Info","Upload Success: "+mTask.getMonitorPath(),mTask.getTaskName());
-							IOC.log.warn("Info: Upload Success: " + mTask.getMonitorPath());
-							
-							// 上传后删除rar文件
-							File cashPath= new File(cachFold);
-							if(cashPath.exists()){
-								FileUtil.deleteAll(cashPath);
+							if(flag){
+								// 更新数据库的上传标志
+								try {
+									mTask.setUpload(1);
+									globaVariableBean.getMonitorTaskDao().updateTask(mTask);
+								} catch (Exception e) {
+									e.printStackTrace();
+									IOC.log.error(e.getMessage());
+								}
+								
+								httpHandler.sendMonitorEvent(DataUtil.getTime(),"Info","Upload Success: "+mTask.getMonitorPath(),mTask.getTaskName());
+								IOC.log.warn("Info: Upload Success: " + mTask.getMonitorPath());
+								
+								// 上传后删除rar文件
+								File cashPath= new File(cachFold);
+								if(cashPath.exists()){
+									FileUtil.deleteAll(cashPath);
+								}
 							}
 						}
 					}

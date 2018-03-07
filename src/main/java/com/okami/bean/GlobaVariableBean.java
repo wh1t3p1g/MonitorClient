@@ -5,12 +5,15 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
+import java.util.Stack;
 
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
 
 import com.okami.config.DBConfig;
 import com.okami.core.BackupAndCheckThread;
+import com.okami.core.ControlCenter;
+import com.okami.core.IOC;
 import com.okami.core.MonitorThread;
 import com.okami.dao.impl.DataConfigDao;
 import com.okami.dao.impl.FileIndexDao;
@@ -31,7 +34,7 @@ public class GlobaVariableBean {
 	
 	// 队列
 	private Queue<String> qHeartBeats;
-	private Queue<RequrieBean> qRepaire;
+	private Stack<RequrieBean> qRepaire;
 	private List<Queue<String>> qMonitorList;
 	
 	// 数据库的连接列表
@@ -51,7 +54,7 @@ public class GlobaVariableBean {
 		qMonitorList = new ArrayList<Queue<String>>();
 		fileIndexDaoList = new ArrayList<FileIndexDao>();
 		qHeartBeats = new LinkedList<String>();
-		qRepaire = new LinkedList<RequrieBean>();
+		qRepaire = new Stack<RequrieBean>();
 		monitorTaskDao = new MonitorTaskDao();
 		dataConfigDao = new DataConfigDao();
 		// 开启数据库连接
@@ -66,6 +69,7 @@ public class GlobaVariableBean {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			IOC.log.error(e.getMessage());
 		}
 		
 	}
@@ -86,11 +90,11 @@ public class GlobaVariableBean {
 		this.qHeartBeats = qHeartBeats;
 	}
 	
-	public Queue<RequrieBean> getQRepaire(){
+	public Stack<RequrieBean> getQRepaire(){
 		return qRepaire;
 	}
 
-	public void setQRepaire(Queue<RequrieBean> qRepaire){
+	public void setQRepaire(Stack<RequrieBean> qRepaire){
 		this.qRepaire = qRepaire;
 	}
 	
