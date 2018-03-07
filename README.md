@@ -18,10 +18,10 @@
 
 | Type     | Service                | Client
 |:-------- |:---------------------- |:------------------------------------ 
-| System   | Windows/Linux          | None
+| System   | Windows/Linux          | Windows/Linux
 | Language | PHP7                   | Java 8
 | Database | Mysql                  | Sqlite
-| NetWork  | tcpmux                 | None
+| NetWork  | intranet                 | intranet
 
 2. 添加so文件
 
