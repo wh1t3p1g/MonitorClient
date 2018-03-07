@@ -31,7 +31,7 @@
 
 3. 修改客户端配置（config/config.ini）
 
-4. 运行程序：
+4. maven打包生成jar文件，运行程序：
 
 ```
 java -jar MonitorClient-2.1.0.jar
