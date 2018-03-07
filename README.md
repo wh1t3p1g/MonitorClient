@@ -3,7 +3,7 @@
 # 功能
 1. 网站源码实时监控，并将文件异动发送到服务器端。
 2. 监控模式分强制模式和人工模式
-   - 强制模式：监控并强制恢复高危行为(新增，删除，修改)所造成的影响（删除新增文件，恢复删除或修改的文件）。
+   - 强制模式：运行前自动备份以及自检、运行时监控并强制恢复高危行为(新增，删除，修改)所造成的影响（删除新增文件，恢复删除或修改的文件）。
    - 人工模式：监控但不作出任何处理。
 3. webshell检测
     - SSDEEP 文件相似度检测，本项目采集了5000个webshell样本集，去重过滤后生成了1698个SSDEEP值。
@@ -13,7 +13,28 @@
 5. 加密通信，防止第三方监听窃密。
  
 # 安装
-to be continue...
+
+1. 运行环境如下：
+
+| Type     | Service                | Client
+|:-------- |:---------------------- |:------------------------------------ 
+| System   | Windows/Linux          | None
+| Language | PHP7                   | Java 8
+| Database | Mysql                  | Sqlite
+| NetWork  | tcpmux                 | None
+
+2. 添加so文件
+
+添加环境文件到java library
+根据操作系统，添加environment目录下相应的环境文件到步骤一中显示的路径中去，例如64位Linux操作系统添加64-bit Linux/libjnotify.so到图1-1的路径中去即可。
+
+3. 修改客户端配置（config/config.ini）
+
+4. 运行程序：
+
+```
+java -jar MonitorClient-2.1.0.jar
+```
 
 # 感谢
 文件实时监控及处理 [@orleven](https://github.com/orleven)<br>
